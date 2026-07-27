@@ -745,6 +745,47 @@
     </div>
 
     <div class="card">
+      <div class="card-title">Venue</div>
+      <select id="venue">
+        <option value="">— Select ground —</option>
+        <optgroup label="Victoria">
+          <option value="MCG, Melbourne — open air, 100,000 capacity, Melbourne/Collingwood/Richmond/Essendon home">MCG — Melbourne</option>
+          <option value="Marvel Stadium, Melbourne — enclosed roof, 56,000 capacity, Carlton/Western Bulldogs/North Melbourne/St Kilda home">Marvel Stadium — Melbourne</option>
+          <option value="GMHBA Stadium, Geelong — open air, 36,000 capacity, Geelong home fortress">GMHBA Stadium — Geelong</option>
+          <option value="Lavington Sports Ground, Albury — regional open air venue">Lavington Sports Ground — Albury</option>
+          <option value="Mars Stadium, Ballarat — open air regional venue, Bulldogs/Essendon occasional home">Mars Stadium — Ballarat</option>
+          <option value="Norm Minogue Oval, Wangaratta — regional open air venue">Norm Minogue Oval — Wangaratta</option>
+        </optgroup>
+        <optgroup label="Queensland">
+          <option value="The Gabba, Brisbane — open air, 42,000 capacity, Brisbane Lions home">The Gabba — Brisbane</option>
+          <option value="People First Stadium, Gold Coast — open air, 27,000 capacity, Gold Coast Suns home">People First Stadium — Gold Coast</option>
+          <option value="Cazaly's Stadium, Cairns — regional open air venue">Cazaly's Stadium — Cairns</option>
+        </optgroup>
+        <optgroup label="New South Wales">
+          <option value="SCG, Sydney — open air, 48,000 capacity, Sydney Swans home">SCG — Sydney</option>
+          <option value="ENGIE Stadium, Sydney — open air, 83,500 capacity, GWS Giants home">ENGIE Stadium — Sydney (GWS)</option>
+          <option value="GMHBA Stadium Canberra (Manuka Oval) — open air, 13,000 capacity, GWS occasional home">Manuka Oval — Canberra</option>
+        </optgroup>
+        <optgroup label="South Australia">
+          <option value="Adelaide Oval, Adelaide — open air, 53,500 capacity, Adelaide Crows and Port Adelaide home">Adelaide Oval — Adelaide</option>
+        </optgroup>
+        <optgroup label="Western Australia">
+          <option value="Optus Stadium, Perth — open air, 60,000 capacity, Fremantle and West Coast home, strong home advantage">Optus Stadium — Perth</option>
+        </optgroup>
+        <optgroup label="Northern Territory">
+          <option value="TIO Traeger Park, Alice Springs — open air, 10,000 capacity, hot dry conditions affect play">TIO Traeger Park — Alice Springs</option>
+          <option value="TIO Stadium, Darwin — open air, 18,000 capacity, hot humid conditions">TIO Stadium — Darwin</option>
+        </optgroup>
+        <optgroup label="Tasmania">
+          <option value="Blundstone Arena, Hobart — open air, 20,000 capacity, cold conditions, Hawthorn occasional home">Blundstone Arena — Hobart</option>
+          <option value="UTAS Stadium, Launceston — open air, 20,000 capacity, Hawthorn occasional home">UTAS Stadium — Launceston</option>
+          <option value="York Park, Launceston — open air regional venue">York Park — Launceston</option>
+        </optgroup>
+      </optgroup>
+      </select>
+    </div>
+
+    <div class="card">
       <div class="card-title">Late Changes & Injuries</div>
       <textarea id="injuries" placeholder="e.g. Riley Thilthorpe OUT (illness), Jacob Weitering OUT, Harry Dean replaced by Lewis Young..."></textarea>
     </div>
@@ -854,44 +895,45 @@ let currentResults = null;
 
 // ─── TEAM LOGOS ──────────────────────────────────────────────
 const AFL_LOGOS = {
-  'adelaide':            'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Adelaide_Crows_logo.svg/200px-Adelaide_Crows_logo.svg.png',
-  'crows':               'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Adelaide_Crows_logo.svg/200px-Adelaide_Crows_logo.svg.png',
-  'brisbane':            'https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Brisbane_Lions_logo.svg/200px-Brisbane_Lions_logo.svg.png',
-  'lions':               'https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Brisbane_Lions_logo.svg/200px-Brisbane_Lions_logo.svg.png',
-  'carlton':             'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Carlton_Football_Club_logo.svg/200px-Carlton_Football_Club_logo.svg.png',
-  'blues':               'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Carlton_Football_Club_logo.svg/200px-Carlton_Football_Club_logo.svg.png',
-  'collingwood':         'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/Collingwood_Football_Club_logo.svg/200px-Collingwood_Football_Club_logo.svg.png',
-  'magpies':             'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/Collingwood_Football_Club_logo.svg/200px-Collingwood_Football_Club_logo.svg.png',
-  'essendon':            'https://upload.wikimedia.org/wikipedia/en/thumb/4/4e/Essendon_FC_logo.svg/200px-Essendon_FC_logo.svg.png',
-  'bombers':             'https://upload.wikimedia.org/wikipedia/en/thumb/4/4e/Essendon_FC_logo.svg/200px-Essendon_FC_logo.svg.png',
-  'fremantle':           'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Fremantle_FC_logo.svg/200px-Fremantle_FC_logo.svg.png',
-  'dockers':             'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Fremantle_FC_logo.svg/200px-Fremantle_FC_logo.svg.png',
-  'geelong':             'https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/Geelong_Cats_logo.svg/200px-Geelong_Cats_logo.svg.png',
-  'cats':                'https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/Geelong_Cats_logo.svg/200px-Geelong_Cats_logo.svg.png',
-  'gold coast':          'https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Gold_Coast_Suns_logo.svg/200px-Gold_Coast_Suns_logo.svg.png',
-  'suns':                'https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Gold_Coast_Suns_logo.svg/200px-Gold_Coast_Suns_logo.svg.png',
-  'gws':                 'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
-  'giants':              'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
-  'greater western sydney': 'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
-  'hawthorn':            'https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Hawthorn_FC_logo.svg/200px-Hawthorn_FC_logo.svg.png',
-  'hawks':               'https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Hawthorn_FC_logo.svg/200px-Hawthorn_FC_logo.svg.png',
-  'melbourne':           'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Melbourne_FC_logo.svg/200px-Melbourne_FC_logo.svg.png',
-  'demons':              'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Melbourne_FC_logo.svg/200px-Melbourne_FC_logo.svg.png',
-  'north melbourne':     'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
-  'kangaroos':           'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
-  'north':               'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
-  'port adelaide':       'https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Port_Adelaide_Football_Club_logo.svg/200px-Port_Adelaide_Football_Club_logo.svg.png',
-  'power':               'https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Port_Adelaide_Football_Club_logo.svg/200px-Port_Adelaide_Football_Club_logo.svg.png',
-  'richmond':            'https://upload.wikimedia.org/wikipedia/en/thumb/f/f3/Richmond_Football_Club_logo.svg/200px-Richmond_Football_Club_logo.svg.png',
-  'tigers':              'https://upload.wikimedia.org/wikipedia/en/thumb/f/f3/Richmond_Football_Club_logo.svg/200px-Richmond_Football_Club_logo.svg.png',
-  'st kilda':            'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/St_Kilda_FC_logo.svg/200px-St_Kilda_FC_logo.svg.png',
-  'saints':              'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/St_Kilda_FC_logo.svg/200px-St_Kilda_FC_logo.svg.png',
-  'sydney':              'https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Sydney_Swans_logo.svg/200px-Sydney_Swans_logo.svg.png',
-  'swans':               'https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Sydney_Swans_logo.svg/200px-Sydney_Swans_logo.svg.png',
-  'west coast':          'https://upload.wikimedia.org/wikipedia/en/thumb/8/81/West_Coast_Eagles_logo.svg/200px-West_Coast_Eagles_logo.svg.png',
-  'eagles':              'https://upload.wikimedia.org/wikipedia/en/thumb/8/81/West_Coast_Eagles_logo.svg/200px-West_Coast_Eagles_logo.svg.png',
-  'western bulldogs':    'https://upload.wikimedia.org/wikipedia/en/thumb/8/82/Western_Bulldogs_logo.svg/200px-Western_Bulldogs_logo.svg.png',
-  'bulldogs':            'https://upload.wikimedia.org/wikipedia/en/thumb/8/82/Western_Bulldogs_logo.svg/200px-Western_Bulldogs_logo.svg.png',
+  'adelaide':               'https://a.espncdn.com/i/teamlogos/afl/500/ade.png',
+  'crows':                  'https://a.espncdn.com/i/teamlogos/afl/500/ade.png',
+  'brisbane':               'https://a.espncdn.com/i/teamlogos/afl/500/bri.png',
+  'lions':                  'https://a.espncdn.com/i/teamlogos/afl/500/bri.png',
+  'carlton':                'https://a.espncdn.com/i/teamlogos/afl/500/car.png',
+  'blues':                  'https://a.espncdn.com/i/teamlogos/afl/500/car.png',
+  'collingwood':            'https://a.espncdn.com/i/teamlogos/afl/500/col.png',
+  'magpies':                'https://a.espncdn.com/i/teamlogos/afl/500/col.png',
+  'essendon':               'https://a.espncdn.com/i/teamlogos/afl/500/ess.png',
+  'bombers':                'https://a.espncdn.com/i/teamlogos/afl/500/ess.png',
+  'fremantle':              'https://a.espncdn.com/i/teamlogos/afl/500/fre.png',
+  'dockers':                'https://a.espncdn.com/i/teamlogos/afl/500/fre.png',
+  'geelong':                'https://a.espncdn.com/i/teamlogos/afl/500/gee.png',
+  'cats':                   'https://a.espncdn.com/i/teamlogos/afl/500/gee.png',
+  'gold coast':             'https://a.espncdn.com/i/teamlogos/afl/500/gc.png',
+  'suns':                   'https://a.espncdn.com/i/teamlogos/afl/500/gc.png',
+  'gws':                    'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
+  'giants':                 'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
+  'greater western sydney': 'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
+  'hawthorn':               'https://a.espncdn.com/i/teamlogos/afl/500/haw.png',
+  'hawks':                  'https://a.espncdn.com/i/teamlogos/afl/500/haw.png',
+  'melbourne':              'https://a.espncdn.com/i/teamlogos/afl/500/mel.png',
+  'demons':                 'https://a.espncdn.com/i/teamlogos/afl/500/mel.png',
+  'north melbourne':        'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
+  'kangaroos':              'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
+  'north':                  'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
+  'port adelaide':          'https://a.espncdn.com/i/teamlogos/afl/500/pa.png',
+  'power':                  'https://a.espncdn.com/i/teamlogos/afl/500/pa.png',
+  'richmond':               'https://a.espncdn.com/i/teamlogos/afl/500/ric.png',
+  'tigers':                 'https://a.espncdn.com/i/teamlogos/afl/500/ric.png',
+  'st kilda':               'https://a.espncdn.com/i/teamlogos/afl/500/stk.png',
+  'saints':                 'https://a.espncdn.com/i/teamlogos/afl/500/stk.png',
+  'sydney':                 'https://a.espncdn.com/i/teamlogos/afl/500/syd.png',
+  'swans':                  'https://a.espncdn.com/i/teamlogos/afl/500/syd.png',
+  'west coast':             'https://a.espncdn.com/i/teamlogos/afl/500/wce.png',
+  'eagles':                 'https://a.espncdn.com/i/teamlogos/afl/500/wce.png',
+  'western bulldogs':       'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
+  'bulldogs':               'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
+  'footscray':              'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
 };
 
 function getLogoUrl(name) {
@@ -977,6 +1019,7 @@ async function runAnalysis() {
   if (!uploadedImages.length) { showError('No screenshots', 'Upload at least one Sportsbet market screenshot before analysing.'); return; }
 
   const weather = document.getElementById('weather').value;
+  const venue = document.getElementById('venue').value;
   const injuries = document.getElementById('injuries').value.trim();
   const minLegs = document.getElementById('minLegs').value;
   const maxLegs = document.getElementById('maxLegs').value;
@@ -1017,10 +1060,12 @@ Required JSON structure:
     {
       type: 'text',
       text: `Analyse these Sportsbet screenshots and build the best AGM.
+Venue: ${venue || 'Unknown — read from screenshots if visible'}
 Weather: ${weatherMap[weather]}
 ${injuries ? 'Late changes/injuries: ' + injuries : 'No injury changes.'}
 Target: ${minLegs}–${maxLegs} legs at ${targetMap[targetOdds]} odds.
-Read the team names, round, disposal lines, goal markets and all odds directly from the screenshots.`
+Read the team names, round, disposal lines, goal markets and all odds directly from the screenshots.
+Factor in the venue's home ground advantage, ground dimensions, enclosed/open air and travel distance for the away team.`
     },
     ...uploadedImages.map(img => ({
       type: 'image',
@@ -1306,6 +1351,7 @@ function resetToSetup() {
   currentResults = null;
   renderPreviews();
   document.getElementById('injuries').value = '';
+  document.getElementById('venue').value = '';
   document.getElementById('setupSection').style.display = 'block';
   document.getElementById('loadingSection').style.display = 'none';
   document.getElementById('resultsSection').style.display = 'none';
