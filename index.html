@@ -894,56 +894,79 @@ let uploadedImages = [];
 let currentResults = null;
 
 // ─── TEAM LOGOS ──────────────────────────────────────────────
-const AFL_LOGOS = {
-  'adelaide':               'https://a.espncdn.com/i/teamlogos/afl/500/ade.png',
-  'crows':                  'https://a.espncdn.com/i/teamlogos/afl/500/ade.png',
-  'brisbane':               'https://a.espncdn.com/i/teamlogos/afl/500/bri.png',
-  'lions':                  'https://a.espncdn.com/i/teamlogos/afl/500/bri.png',
-  'carlton':                'https://a.espncdn.com/i/teamlogos/afl/500/car.png',
-  'blues':                  'https://a.espncdn.com/i/teamlogos/afl/500/car.png',
-  'collingwood':            'https://a.espncdn.com/i/teamlogos/afl/500/col.png',
-  'magpies':                'https://a.espncdn.com/i/teamlogos/afl/500/col.png',
-  'essendon':               'https://a.espncdn.com/i/teamlogos/afl/500/ess.png',
-  'bombers':                'https://a.espncdn.com/i/teamlogos/afl/500/ess.png',
-  'fremantle':              'https://a.espncdn.com/i/teamlogos/afl/500/fre.png',
-  'dockers':                'https://a.espncdn.com/i/teamlogos/afl/500/fre.png',
-  'geelong':                'https://a.espncdn.com/i/teamlogos/afl/500/gee.png',
-  'cats':                   'https://a.espncdn.com/i/teamlogos/afl/500/gee.png',
-  'gold coast':             'https://a.espncdn.com/i/teamlogos/afl/500/gc.png',
-  'suns':                   'https://a.espncdn.com/i/teamlogos/afl/500/gc.png',
-  'gws':                    'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
-  'giants':                 'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
-  'greater western sydney': 'https://a.espncdn.com/i/teamlogos/afl/500/gws.png',
-  'hawthorn':               'https://a.espncdn.com/i/teamlogos/afl/500/haw.png',
-  'hawks':                  'https://a.espncdn.com/i/teamlogos/afl/500/haw.png',
-  'melbourne':              'https://a.espncdn.com/i/teamlogos/afl/500/mel.png',
-  'demons':                 'https://a.espncdn.com/i/teamlogos/afl/500/mel.png',
-  'north melbourne':        'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
-  'kangaroos':              'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
-  'north':                  'https://a.espncdn.com/i/teamlogos/afl/500/nm.png',
-  'port adelaide':          'https://a.espncdn.com/i/teamlogos/afl/500/pa.png',
-  'power':                  'https://a.espncdn.com/i/teamlogos/afl/500/pa.png',
-  'richmond':               'https://a.espncdn.com/i/teamlogos/afl/500/ric.png',
-  'tigers':                 'https://a.espncdn.com/i/teamlogos/afl/500/ric.png',
-  'st kilda':               'https://a.espncdn.com/i/teamlogos/afl/500/stk.png',
-  'saints':                 'https://a.espncdn.com/i/teamlogos/afl/500/stk.png',
-  'sydney':                 'https://a.espncdn.com/i/teamlogos/afl/500/syd.png',
-  'swans':                  'https://a.espncdn.com/i/teamlogos/afl/500/syd.png',
-  'west coast':             'https://a.espncdn.com/i/teamlogos/afl/500/wce.png',
-  'eagles':                 'https://a.espncdn.com/i/teamlogos/afl/500/wce.png',
-  'western bulldogs':       'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
-  'bulldogs':               'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
-  'footscray':              'https://a.espncdn.com/i/teamlogos/afl/500/wb.png',
+const AFL_TEAMS = {
+  'adelaide':               { abbr: 'ADE', bg: '#002B5C', text: '#FFD200' },
+  'crows':                  { abbr: 'ADE', bg: '#002B5C', text: '#FFD200' },
+  'brisbane':               { abbr: 'BRI', bg: '#A30046', text: '#0054A4' },
+  'lions':                  { abbr: 'BRI', bg: '#A30046', text: '#0054A4' },
+  'carlton':                { abbr: 'CAR', bg: '#001F3D', text: '#FFFFFF' },
+  'blues':                  { abbr: 'CAR', bg: '#001F3D', text: '#FFFFFF' },
+  'collingwood':            { abbr: 'COL', bg: '#000000', text: '#FFFFFF' },
+  'magpies':                { abbr: 'COL', bg: '#000000', text: '#FFFFFF' },
+  'essendon':               { abbr: 'ESS', bg: '#CC2529', text: '#000000' },
+  'bombers':                { abbr: 'ESS', bg: '#CC2529', text: '#000000' },
+  'fremantle':              { abbr: 'FRE', bg: '#2C1A54', text: '#FFFFFF' },
+  'dockers':                { abbr: 'FRE', bg: '#2C1A54', text: '#FFFFFF' },
+  'geelong':                { abbr: 'GEE', bg: '#002B5C', text: '#FFFFFF' },
+  'cats':                   { abbr: 'GEE', bg: '#002B5C', text: '#FFFFFF' },
+  'gold coast':             { abbr: 'GCS', bg: '#E8222C', text: '#FFD000' },
+  'suns':                   { abbr: 'GCS', bg: '#E8222C', text: '#FFD000' },
+  'gws':                    { abbr: 'GWS', bg: '#FF7900', text: '#FFFFFF' },
+  'giants':                 { abbr: 'GWS', bg: '#FF7900', text: '#FFFFFF' },
+  'greater western sydney': { abbr: 'GWS', bg: '#FF7900', text: '#FFFFFF' },
+  'hawthorn':               { abbr: 'HAW', bg: '#4D2004', text: '#FFD200' },
+  'hawks':                  { abbr: 'HAW', bg: '#4D2004', text: '#FFD200' },
+  'melbourne':              { abbr: 'MEL', bg: '#CC2031', text: '#0F1F5C' },
+  'demons':                 { abbr: 'MEL', bg: '#CC2031', text: '#0F1F5C' },
+  'north melbourne':        { abbr: 'NME', bg: '#003087', text: '#FFFFFF' },
+  'kangaroos':              { abbr: 'NME', bg: '#003087', text: '#FFFFFF' },
+  'north':                  { abbr: 'NME', bg: '#003087', text: '#FFFFFF' },
+  'port adelaide':          { abbr: 'POR', bg: '#008AAB', text: '#000000' },
+  'power':                  { abbr: 'POR', bg: '#008AAB', text: '#000000' },
+  'richmond':               { abbr: 'RIC', bg: '#FFD200', text: '#000000' },
+  'tigers':                 { abbr: 'RIC', bg: '#FFD200', text: '#000000' },
+  'st kilda':               { abbr: 'STK', bg: '#ED0F05', text: '#FFFFFF' },
+  'saints':                 { abbr: 'STK', bg: '#ED0F05', text: '#FFFFFF' },
+  'sydney':                 { abbr: 'SYD', bg: '#E2001A', text: '#FFFFFF' },
+  'swans':                  { abbr: 'SYD', bg: '#E2001A', text: '#FFFFFF' },
+  'west coast':             { abbr: 'WCE', bg: '#062EB0', text: '#FFD200' },
+  'eagles':                 { abbr: 'WCE', bg: '#062EB0', text: '#FFD200' },
+  'western bulldogs':       { abbr: 'WBD', bg: '#014896', text: '#FFFFFF' },
+  'bulldogs':               { abbr: 'WBD', bg: '#014896', text: '#FFFFFF' },
+  'footscray':              { abbr: 'WBD', bg: '#014896', text: '#FFFFFF' },
 };
 
-function getLogoUrl(name) {
+function getTeamData(name) {
   if (!name) return null;
   const k = name.toLowerCase().trim();
-  if (AFL_LOGOS[k]) return AFL_LOGOS[k];
-  for (const [key, url] of Object.entries(AFL_LOGOS)) {
-    if (k.includes(key) || key.includes(k)) return url;
+  if (AFL_TEAMS[k]) return AFL_TEAMS[k];
+  for (const [key, val] of Object.entries(AFL_TEAMS)) {
+    if (k.includes(key) || key.includes(k)) return val;
   }
   return null;
+}
+
+function teamBadge(name, size) {
+  const data = getTeamData(name);
+  const px = size === 'lg' ? 54 : 30;
+  const fs = size === 'lg' ? 13 : 9;
+  const br = size === 'lg' ? '12px' : '6px';
+  if (data) {
+    return `<div style="width:${px}px;height:${px}px;background:${data.bg};color:${data.text};border-radius:${br};display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-size:${fs}px;font-weight:800;flex-shrink:0;letter-spacing:0.5px;">${data.abbr}</div>`;
+  }
+  return `<div style="width:${px}px;height:${px}px;background:var(--border);border-radius:${br};display:flex;align-items:center;justify-content:center;font-size:${size==='lg'?18:12}px;flex-shrink:0;">🏉</div>`;
+}
+
+function logoImg(name, cls) {
+  const data = getTeamData(name);
+  if (data) {
+    const isLeg = cls === 'leg-logo';
+    const px = isLeg ? 30 : 54;
+    const fs = isLeg ? 9 : 13;
+    const br = isLeg ? '6px' : '12px';
+    return `<div style="width:${px}px;height:${px}px;background:${data.bg};color:${data.text};border-radius:${br};display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-size:${fs}px;font-weight:800;flex-shrink:0;letter-spacing:0.5px;">${data.abbr}</div>`;
+  }
+  return `<div class="leg-logo-placeholder">🏉</div>`;
 }
 
 function logoImg(name, cls) {
@@ -1043,6 +1066,7 @@ async function runAnalysis() {
 
 RULES:
 - Read team names from the top of each screenshot
+- The current AFL season is 2026. We are currently in Round 21. Rounds are numbered 1-25. The "round" field must be "Round X 2026" where X is a number between 1 and 25 — NEVER put just a year like 2025 or 2026 as the round. Correct example: "Round 21 2026"
 - Read every disposal line, over odds, under odds exactly as shown
 - Shorter-priced side = bookmaker signal — always note it
 - Read goal scorer last 5 games and season average exactly as shown
@@ -1054,7 +1078,7 @@ RULES:
 YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
 
 Required JSON structure:
-{"home_team":"Team A","away_team":"Team B","round":"Round X","venue":"Stadium name","verdict":"PLACE","verdict_reason":"One sentence reason","recommended_stake":"$10","overall_confidence":48,"combined_probability":"3.4%","estimated_odds":"$40-$60","legs":[{"player":"Player Name","team":"Team Name","market":"OVER 27.5 Disposals","odds":"$1.82","confidence":62,"confidence_tier":"HIGH","reasoning":"One sentence","market_signal":"Over shorter — market backs the over"}],"market_signals_summary":"Summary of market signals","key_risks":"Key risks","self_challenge":"Honest challenge","safe_build":"Safer alternative","aggressive_build":"Higher risk alternative"}`;
+{"home_team":"Team A","away_team":"Team B","round":"Round 20","venue":"Stadium name","verdict":"PLACE","verdict_reason":"One sentence reason","recommended_stake":"$10","overall_confidence":48,"combined_probability":"3.4%","estimated_odds":"$40-$60","legs":[{"player":"Player Name","team":"Team Name","market":"OVER 27.5 Disposals","odds":"$1.82","confidence":62,"confidence_tier":"HIGH","reasoning":"One sentence","market_signal":"Over shorter — market backs the over"}],"market_signals_summary":"Summary of market signals","key_risks":"Key risks","self_challenge":"Honest challenge","safe_build":"Safer alternative","aggressive_build":"Higher risk alternative"}`;
 
   const userMsg = [
     {
@@ -1150,16 +1174,8 @@ function showResults(d) {
 
   const isPlace = d.verdict === 'PLACE';
   const conf = d.overall_confidence || 0;
-  const homeLogoSrc = getLogoUrl(d.home_team);
-  const awayLogoSrc = getLogoUrl(d.away_team);
-
-  const homeLogo = homeLogoSrc
-    ? `<img src="${homeLogoSrc}" alt="${d.home_team}" style="width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));" onerror="this.outerHTML='<div class=team-placeholder>🏉</div>'">`
-    : `<div class="matchup-team .team-placeholder" style="width:54px;height:54px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">🏉</div>`;
-
-  const awayLogo = awayLogoSrc
-    ? `<img src="${awayLogoSrc}" alt="${d.away_team}" style="width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));" onerror="this.outerHTML='<div class=team-placeholder>🏉</div>'">`
-    : `<div style="width:54px;height:54px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">🏉</div>`;
+  const homeLogo = teamBadge(d.home_team, 'lg');
+  const awayLogo = teamBadge(d.away_team, 'lg');
 
   let legsHTML = '';
   (d.legs || []).forEach((leg, i) => {
