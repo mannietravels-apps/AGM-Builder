@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AGM Builder — AFL Same Game Multi Analyser</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --black: #0a0a0a;
+    --surface: #111318;
+    --card: #1a1d25;
+    --border: #252830;
+    --border-light: #2e3240;
+    --gold: #f0b429;
+    --gold-dim: #c48f15;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --text: #f0f0f0;
+    --text-dim: #8a8f9e;
+    --text-muted: #555a6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { width: 18px; height: 18px; }
+
+  .header-text h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 21px;
+    letter-spacing: 1.5px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .header-text p {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .api-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .status-dot.connected { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .status-dot.error { background: var(--red); }
+
+  /* MAIN */
+  .main { padding: 20px 16px 100px; max-width: 600px; margin: 0 auto; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* INPUTS */
+  .input-group label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  input[type="password"], input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  input[type="password"] { font-family: 'JetBrains Mono', monospace; font-size: 13px; padding-right: 44px; }
+
+  input:focus, textarea:focus, select:focus { border-color: var(--gold); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+  textarea { resize: none; line-height: 1.5; min-height: 76px; }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8f9e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  select option { background: var(--card); }
+
+  /* API KEY */
+  .api-key-wrap { position: relative; }
+
+  .toggle-key {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+  }
+
+  .key-hint { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+  .key-hint a { color: var(--gold); text-decoration: none; }
+
+  /* PREFS ROW */
+  .prefs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border-light);
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--surface);
+    margin-bottom: 12px;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--gold);
+    background: rgba(240,180,41,0.04);
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  .upload-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(240,180,41,0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+
+  .upload-icon svg { width: 22px; height: 22px; stroke: var(--gold); }
+  .upload-zone h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .upload-zone p { font-size: 12px; color: var(--text-muted); }
+
+  /* PREVIEW */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .preview-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 9/16;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+
+  .preview-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 20px;
+    height: 20px;
+    background: rgba(0,0,0,0.85);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preview-count { font-size: 12px; color: var(--gold); font-weight: 600; text-align: center; }
+
+  /* ANALYSE BUTTON */
+  .btn-analyse {
+    width: 100%;
+    background: var(--gold);
+    color: var(--black);
+    border: none;
+    border-radius: 12px;
+    padding: 17px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 21px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .btn-analyse:hover { background: #f5c447; transform: translateY(-1px); }
+  .btn-analyse:active { transform: translateY(0); }
+  .btn-analyse svg { width: 20px; height: 20px; }
+
+  /* LOADING */
+  .loading-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 20px;
+    text-align: center;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 18px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-card h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .loading-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+  .loading-steps { text-align: left; display: flex; flex-direction: column; gap: 10px; }
+
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: color 0.3s;
+  }
+
+  .loading-step.active { color: var(--gold); }
+  .loading-step.done { color: var(--green); }
+
+  .step-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .loading-step.active .step-dot { background: rgba(240,180,41,0.2); color: var(--gold); }
+  .loading-step.done .step-dot { background: rgba(34,197,94,0.2); color: var(--green); }
+
+  /* RESULTS HEADER */
+  .results-header {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 16px 16px;
+    margin-bottom: 12px;
+  }
+
+  .round-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(240,180,41,0.1);
+    border: 1px solid rgba(240,180,41,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* MATCHUP BLOCK */
+  .matchup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .matchup-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .matchup-team img {
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+  }
+
+  .matchup-team .team-placeholder {
+    width: 54px;
+    height: 54px;
+    background: var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .matchup-team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px;
+    letter-spacing: 1px;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.1;
+  }
+
+  .matchup-vs {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    flex-shrink: 0;
+  }
+
+  .venue-weather {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* META ROW */
+  .meta-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .meta-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .meta-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+
+  .meta-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* CONFIDENCE BAR */
+  .conf-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+
+  .conf-row span:first-child { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .conf-row span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+
+  .conf-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; transition: width 1s ease; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+
+  /* VERDICT */
+  .verdict-banner {
+    border-radius: 12px;
+    padding: 15px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .verdict-banner.place { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); }
+  .verdict-banner.skip { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); }
+
+  .verdict-emoji { font-size: 24px; flex-shrink: 0; }
+
+  .verdict-text h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .verdict-banner.place .verdict-text h4 { color: var(--green); }
+  .verdict-banner.skip .verdict-text h4 { color: var(--red); }
+  .verdict-text p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+  /* ACCURACY */
+  .accuracy-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .accuracy-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  .accuracy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+
+  .accuracy-item { text-align: center; padding: 10px 6px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+
+  .accuracy-num { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; margin-bottom: 2px; }
+  .accuracy-num.green { color: var(--green); }
+  .accuracy-num.red { color: var(--red); }
+  .accuracy-num.gold { color: var(--gold); }
+  .accuracy-lbl { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .acc-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .acc-bar-label span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--text); font-weight: 600; }
+  .acc-track { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .acc-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transition: width 0.6s ease; }
+
+  .acc-hint { font-size: 11px; color: var(--text-muted); margin-top: 10px; }
+
+  /* LEG CARDS */
+  .leg-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .leg-card.won { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.05); }
+  .leg-card.lost { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.05); }
+
+  .leg-logo {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+  }
+
+  .leg-logo-placeholder {
+    width: 30px;
+    height: 30px;
+    background: var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .leg-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .leg-info { flex: 1; min-width: 0; }
+
+  .leg-player { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .leg-market { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; }
+
+  .leg-reason { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+  .leg-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+  .leg-conf { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--text); }
+
+  .conf-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .conf-high { background: rgba(34,197,94,0.15); color: var(--green); }
+  .conf-med { background: rgba(240,180,41,0.15); color: var(--gold); }
+  .conf-low { background: rgba(239,68,68,0.12); color: #f87171; }
+
+  .leg-result-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 2px solid var(--border-light);
+    background: var(--surface);
+    transition: all 0.15s;
+    color: var(--text-muted);
+  }
+
+  .leg-result-btn.won { background: rgba(34,197,94,0.2); border-color: var(--green); color: var(--green); }
+  .leg-result-btn.lost { background: rgba(239,68,68,0.15); border-color: var(--red); color: var(--red); }
+
+  /* INFO BOXES */
+  .info-box {
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .info-box.gold { background: rgba(240,180,41,0.06); border: 1px solid rgba(240,180,41,0.15); }
+  .info-box.red { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); }
+  .info-box.blue { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); }
+
+  .info-box h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+  .info-box.gold h4 { color: var(--gold); }
+  .info-box.red h4 { color: var(--red); }
+  .info-box.blue h4 { color: #60a5fa; }
+  .info-box p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+
+  /* ALT BUILDS */
+  .alt-builds { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .alt-builds-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .alt-build { padding: 10px 12px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px; }
+  .alt-build:last-child { margin-bottom: 0; }
+  .alt-build-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+  .alt-build-label.safe { color: var(--green); }
+  .alt-build-label.agg { color: #f87171; }
+  .alt-build p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  /* BUTTONS */
+  .btn-new {
+    width: 100%;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+  }
+
+  .btn-new:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ERROR */
+  .error-box { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+  .error-box h4 { color: var(--red); font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .error-box p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+  /* FOOTER */
+  .footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 24px 16px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="12" cy="12" rx="10" ry="6" stroke="#0a0a0a" stroke-width="2"/>
+        <line x1="2" y1="12" x2="22" y2="12" stroke="#0a0a0a" stroke-width="2"/>
+        <line x1="12" y1="6" x2="12" y2="18" stroke="#0a0a0a" stroke-width="2"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>AGM Builder</h1>
+      <p>AFL Same Game Multi Analyser</p>
+    </div>
+    <div class="api-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">No key</span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- SETUP -->
+  <div id="setupSection">
+
+    <div class="section-label">Setup</div>
+    <div class="card">
+      <div class="card-title">Claude API Key</div>
+      <div class="api-key-wrap">
+        <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+        <button class="toggle-key" onclick="toggleKey()" title="Show/hide">
+          <svg id="eyeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <p class="key-hint">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — saved locally to your device only.</p>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Game Setup</div>
+
+    <div class="card">
+      <div class="card-title">Weather & Conditions</div>
+      <select id="weather">
+        <option value="fine">☀️ Fine — no weather factor</option>
+        <option value="enclosed">🏟 Enclosed stadium</option>
+        <option value="light_rain">🌦 Light rain</option>
+        <option value="heavy_rain">🌧 Heavy rain</option>
+        <option value="wind">💨 Strong wind (25km/h+)</option>
+        <option value="rain_wind">⛈ Rain + strong wind</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Late Changes & Injuries</div>
+      <textarea id="injuries" placeholder="e.g. Riley Thilthorpe OUT (illness), Jacob Weitering OUT, Harry Dean replaced by Lewis Young..."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Build Preferences</div>
+      <div class="prefs-row">
+        <div class="input-group">
+          <label>Min Legs</label>
+          <select id="minLegs">
+            <option value="6" selected>6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Max Legs</label>
+          <select id="maxLegs">
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10" selected>10</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Target</label>
+          <select id="targetOdds">
+            <option value="6_10">$6–10</option>
+            <option value="10_20" selected>$10–20</option>
+            <option value="20_50">$20–50</option>
+            <option value="50_plus">$50+</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Sportsbet Screenshots</div>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <h3>Upload Screenshots</h3>
+      <p>Tap to choose or drag & drop<br>Disposal markets, goals — any Sportsbet screen</p>
+    </div>
+
+    <div id="previewArea" style="display:none; margin-bottom:12px;">
+      <div class="preview-grid" id="previewGrid"></div>
+      <p class="preview-count" id="previewCount" style="margin-top:8px;"></p>
+    </div>
+
+    <button class="btn-analyse" onclick="runAnalysis()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      ANALYSE GAME
+    </button>
+
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingSection" style="display:none;">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <h3>Analysing your game</h3>
+      <p>Reading markets and building your AGM...</p>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1"><div class="step-dot">1</div>Reading screenshot data</div>
+        <div class="loading-step" id="step2"><div class="step-dot">2</div>Identifying teams & round</div>
+        <div class="loading-step" id="step3"><div class="step-dot">3</div>Mapping disposal lines & odds</div>
+        <div class="loading-step" id="step4"><div class="step-dot">4</div>Analysing goal scorer markets</div>
+        <div class="loading-step" id="step5"><div class="step-dot">5</div>Building optimal AGM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsSection" style="display:none;"></div>
+
+  <!-- ERROR -->
+  <div id="errorSection" style="display:none;"></div>
+
+</main>
+
+<script>
+let uploadedImages = [];
+let currentResults = null;
+
+// ─── TEAM LOGOS ──────────────────────────────────────────────
+const AFL_LOGOS = {
+  'adelaide':            'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Adelaide_Crows_logo.svg/200px-Adelaide_Crows_logo.svg.png',
+  'crows':               'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Adelaide_Crows_logo.svg/200px-Adelaide_Crows_logo.svg.png',
+  'brisbane':            'https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Brisbane_Lions_logo.svg/200px-Brisbane_Lions_logo.svg.png',
+  'lions':               'https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Brisbane_Lions_logo.svg/200px-Brisbane_Lions_logo.svg.png',
+  'carlton':             'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Carlton_Football_Club_logo.svg/200px-Carlton_Football_Club_logo.svg.png',
+  'blues':               'https://upload.wikimedia.org/wikipedia/en/thumb/1/11/Carlton_Football_Club_logo.svg/200px-Carlton_Football_Club_logo.svg.png',
+  'collingwood':         'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/Collingwood_Football_Club_logo.svg/200px-Collingwood_Football_Club_logo.svg.png',
+  'magpies':             'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/Collingwood_Football_Club_logo.svg/200px-Collingwood_Football_Club_logo.svg.png',
+  'essendon':            'https://upload.wikimedia.org/wikipedia/en/thumb/4/4e/Essendon_FC_logo.svg/200px-Essendon_FC_logo.svg.png',
+  'bombers':             'https://upload.wikimedia.org/wikipedia/en/thumb/4/4e/Essendon_FC_logo.svg/200px-Essendon_FC_logo.svg.png',
+  'fremantle':           'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Fremantle_FC_logo.svg/200px-Fremantle_FC_logo.svg.png',
+  'dockers':             'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Fremantle_FC_logo.svg/200px-Fremantle_FC_logo.svg.png',
+  'geelong':             'https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/Geelong_Cats_logo.svg/200px-Geelong_Cats_logo.svg.png',
+  'cats':                'https://upload.wikimedia.org/wikipedia/en/thumb/8/8d/Geelong_Cats_logo.svg/200px-Geelong_Cats_logo.svg.png',
+  'gold coast':          'https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Gold_Coast_Suns_logo.svg/200px-Gold_Coast_Suns_logo.svg.png',
+  'suns':                'https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Gold_Coast_Suns_logo.svg/200px-Gold_Coast_Suns_logo.svg.png',
+  'gws':                 'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
+  'giants':              'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
+  'greater western sydney': 'https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Greater_Western_Sydney_Giants_logo.svg/200px-Greater_Western_Sydney_Giants_logo.svg.png',
+  'hawthorn':            'https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Hawthorn_FC_logo.svg/200px-Hawthorn_FC_logo.svg.png',
+  'hawks':               'https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Hawthorn_FC_logo.svg/200px-Hawthorn_FC_logo.svg.png',
+  'melbourne':           'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Melbourne_FC_logo.svg/200px-Melbourne_FC_logo.svg.png',
+  'demons':              'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Melbourne_FC_logo.svg/200px-Melbourne_FC_logo.svg.png',
+  'north melbourne':     'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
+  'kangaroos':           'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
+  'north':               'https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/North_Melbourne_FC_logo.svg/200px-North_Melbourne_FC_logo.svg.png',
+  'port adelaide':       'https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Port_Adelaide_Football_Club_logo.svg/200px-Port_Adelaide_Football_Club_logo.svg.png',
+  'power':               'https://upload.wikimedia.org/wikipedia/en/thumb/2/29/Port_Adelaide_Football_Club_logo.svg/200px-Port_Adelaide_Football_Club_logo.svg.png',
+  'richmond':            'https://upload.wikimedia.org/wikipedia/en/thumb/f/f3/Richmond_Football_Club_logo.svg/200px-Richmond_Football_Club_logo.svg.png',
+  'tigers':              'https://upload.wikimedia.org/wikipedia/en/thumb/f/f3/Richmond_Football_Club_logo.svg/200px-Richmond_Football_Club_logo.svg.png',
+  'st kilda':            'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/St_Kilda_FC_logo.svg/200px-St_Kilda_FC_logo.svg.png',
+  'saints':              'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/St_Kilda_FC_logo.svg/200px-St_Kilda_FC_logo.svg.png',
+  'sydney':              'https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Sydney_Swans_logo.svg/200px-Sydney_Swans_logo.svg.png',
+  'swans':               'https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Sydney_Swans_logo.svg/200px-Sydney_Swans_logo.svg.png',
+  'west coast':          'https://upload.wikimedia.org/wikipedia/en/thumb/8/81/West_Coast_Eagles_logo.svg/200px-West_Coast_Eagles_logo.svg.png',
+  'eagles':              'https://upload.wikimedia.org/wikipedia/en/thumb/8/81/West_Coast_Eagles_logo.svg/200px-West_Coast_Eagles_logo.svg.png',
+  'western bulldogs':    'https://upload.wikimedia.org/wikipedia/en/thumb/8/82/Western_Bulldogs_logo.svg/200px-Western_Bulldogs_logo.svg.png',
+  'bulldogs':            'https://upload.wikimedia.org/wikipedia/en/thumb/8/82/Western_Bulldogs_logo.svg/200px-Western_Bulldogs_logo.svg.png',
+};
+
+function getLogoUrl(name) {
+  if (!name) return null;
+  const k = name.toLowerCase().trim();
+  if (AFL_LOGOS[k]) return AFL_LOGOS[k];
+  for (const [key, url] of Object.entries(AFL_LOGOS)) {
+    if (k.includes(key) || key.includes(k)) return url;
+  }
+  return null;
+}
+
+function logoImg(name, cls) {
+  const src = getLogoUrl(name);
+  if (src) return `<img src="${src}" class="${cls}" alt="${name}" onerror="this.style.display='none'">`;
+  return `<div class="leg-logo-placeholder">🏉</div>`;
+}
+
+// ─── API KEY ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('agm_key');
+  if (saved) { document.getElementById('apiKey').value = saved; setStatus('connected', 'Key saved'); }
+  document.getElementById('apiKey').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v.startsWith('sk-ant-')) { localStorage.setItem('agm_key', v); setStatus('connected', 'Key saved'); }
+    else if (!v) { localStorage.removeItem('agm_key'); setStatus('', 'No key'); }
+    else setStatus('error', 'Invalid');
+  });
+});
+
+function setStatus(type, text) {
+  document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+function toggleKey() {
+  const i = document.getElementById('apiKey');
+  const icon = document.getElementById('eyeIcon');
+  if (i.type === 'password') {
+    i.type = 'text';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    i.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+// ─── FILES ───────────────────────────────────────────────────
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => { uploadedImages.push({ file, dataUrl: e.target.result }); renderPreviews(); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('previewGrid');
+  const area = document.getElementById('previewArea');
+  grid.innerHTML = '';
+  uploadedImages.forEach((img, i) => {
+    const d = document.createElement('div');
+    d.className = 'preview-item';
+    d.innerHTML = `<img src="${img.dataUrl}" alt=""><button class="preview-remove" onclick="removeImg(${i})">✕</button>`;
+    grid.appendChild(d);
+  });
+  area.style.display = uploadedImages.length ? 'block' : 'none';
+  document.getElementById('previewCount').textContent = uploadedImages.length ? `${uploadedImages.length} screenshot${uploadedImages.length > 1 ? 's' : ''} ready to analyse` : '';
+}
+
+function removeImg(i) { uploadedImages.splice(i, 1); renderPreviews(); }
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+
+// ─── ANALYSIS ────────────────────────────────────────────────
+async function runAnalysis() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('No API key', 'Enter your Claude API key in the Setup card above.'); return; }
+  if (!uploadedImages.length) { showError('No screenshots', 'Upload at least one Sportsbet market screenshot before analysing.'); return; }
+
+  const weather = document.getElementById('weather').value;
+  const injuries = document.getElementById('injuries').value.trim();
+  const minLegs = document.getElementById('minLegs').value;
+  const maxLegs = document.getElementById('maxLegs').value;
+  const targetOdds = document.getElementById('targetOdds').value;
+
+  const weatherMap = {
+    fine: 'Fine conditions — no weather factor',
+    enclosed: 'Enclosed stadium — no weather factor',
+    light_rain: 'Light rain — slight suppression of disposal counts',
+    heavy_rain: 'Heavy rain — significant suppression of disposals and forward entries',
+    wind: 'Strong wind 25km/h+ — impacts kicking accuracy and scoring',
+    rain_wind: 'Rain and strong wind — major suppression of scoring and disposals'
+  };
+
+  const targetMap = { '6_10': '$6–$10', '10_20': '$10–$20', '20_50': '$20–$50', '50_plus': '$50+' };
+
+  showLoading();
+  animateSteps();
+
+  const systemPrompt = `You are an expert AFL analyst, professional sports bettor and quantitative risk manager. Your job is to read Sportsbet market screenshots and build the best possible Same Game Multi (AGM).
+
+CRITICAL INSTRUCTIONS:
+- Read the team names directly from the screenshots — they appear at the top of every Sportsbet screen
+- Read every disposal line and both the over and under odds exactly as shown
+- The shorter-priced side signals bookmaker confidence — always identify this
+- Read every goal scorer's last 5 games and season average exactly as shown
+- Build ${minLegs}–${maxLegs} legs targeting ${targetMap[targetOdds]} combined odds
+- Include both disposal legs (overs AND unders where signal supports) and goal scorer legs
+- Give each leg a true probability confidence percentage
+- Multiply all probabilities to get combined probability
+- If no valuable AGM exists, set verdict to NO BET — never force a selection
+- Be honest and challenge your own reasoning
+
+RESPONSE: Return ONLY valid JSON with no markdown fences, no preamble:
+
+{
+  "home_team": "Exact team name from screenshots",
+  "away_team": "Exact team name from screenshots",
+  "round": "Round X or empty string",
+  "venue": "Venue name if visible, else empty string",
+  "verdict": "PLACE",
+  "verdict_reason": "One sentence",
+  "recommended_stake": "$10",
+  "overall_confidence": 48,
+  "combined_probability": "3.4%",
+  "estimated_odds": "$40–$60",
+  "legs": [
+    {
+      "player": "Full player name",
+      "team": "Team name",
+      "market": "OVER 27.5 Disposals",
+      "odds": "$1.82",
+      "confidence": 62,
+      "confidence_tier": "HIGH",
+      "reasoning": "One sentence explaining the value",
+      "market_signal": "Over shorter at $1.82 vs under $1.91 — market backs the over"
+    }
+  ],
+  "market_signals_summary": "What the disposal market pricing is telling you overall",
+  "key_risks": "2–3 key risks that could bust the multi",
+  "self_challenge": "Honest challenge to the analysis",
+  "safe_build": "Description of a safer lower-leg alternative",
+  "aggressive_build": "Description of a higher-risk higher-odds alternative"
+}`;
+
+  const userMsg = [
+    {
+      type: 'text',
+      text: `Analyse these Sportsbet screenshots and build the best AGM.
+Weather: ${weatherMap[weather]}
+${injuries ? 'Late changes/injuries: ' + injuries : 'No injury changes.'}
+Target: ${minLegs}–${maxLegs} legs at ${targetMap[targetOdds]} odds.
+Read the team names, round, disposal lines, goal markets and all odds directly from the screenshots.`
+    },
+    ...uploadedImages.map(img => ({
+      type: 'image',
+      source: { type: 'base64', media_type: img.file.type, data: img.dataUrl.split(',')[1] }
+    }))
+  ];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const json = JSON.parse(clean);
+    currentResults = json;
+    showResults(json);
+
+  } catch (err) {
+    console.error(err);
+    showError('Analysis failed', err.message || 'Check your API key and try again.');
+  }
+}
+
+// ─── LOADING ─────────────────────────────────────────────────
+function animateSteps() {
+  const ids = ['step1','step2','step3','step4','step5'];
+  let i = 0;
+  const t = setInterval(() => {
+    if (i > 0) {
+      const prev = document.getElementById(ids[i-1]);
+      if (prev) { prev.className = 'loading-step done'; prev.querySelector('.step-dot').textContent = '✓'; }
+    }
+    if (i < ids.length) {
+      const cur = document.getElementById(ids[i]);
+      if (cur) cur.className = 'loading-step active';
+    }
+    i++;
+    if (i > ids.length) clearInterval(t);
+  }, 1400);
+}
+
+function showLoading() {
+  document.getElementById('setupSection').style.display = 'none';
+  document.getElementById('loadingSection').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('errorSection').style.display = 'none';
+  ['step1','step2','step3','step4','step5'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    el.className = 'loading-step';
+    el.querySelector('.step-dot').textContent = idx + 1;
+  });
+}
+
+// ─── RESULTS ─────────────────────────────────────────────────
+function showResults(d) {
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+
+  const isPlace = d.verdict === 'PLACE';
+  const conf = d.overall_confidence || 0;
+  const homeLogoSrc = getLogoUrl(d.home_team);
+  const awayLogoSrc = getLogoUrl(d.away_team);
+
+  const homeLogo = homeLogoSrc
+    ? `<img src="${homeLogoSrc}" alt="${d.home_team}" style="width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));" onerror="this.outerHTML='<div class=team-placeholder>🏉</div>'">`
+    : `<div class="matchup-team .team-placeholder" style="width:54px;height:54px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">🏉</div>`;
+
+  const awayLogo = awayLogoSrc
+    ? `<img src="${awayLogoSrc}" alt="${d.away_team}" style="width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5));" onerror="this.outerHTML='<div class=team-placeholder>🏉</div>'">`
+    : `<div style="width:54px;height:54px;background:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;">🏉</div>`;
+
+  let legsHTML = '';
+  (d.legs || []).forEach((leg, i) => {
+    const tierCls = leg.confidence_tier === 'HIGH' ? 'conf-high' : leg.confidence_tier === 'LOW' ? 'conf-low' : 'conf-med';
+    const legLogoSrc = getLogoUrl(leg.team);
+    const legLogo = legLogoSrc
+      ? `<img src="${legLogoSrc}" alt="${leg.team}" class="leg-logo" onerror="this.outerHTML='<div class=leg-logo-placeholder>🏉</div>'">`
+      : `<div class="leg-logo-placeholder">🏉</div>`;
+
+    legsHTML += `
+      <div class="leg-card" id="lc${i}" data-state="pending">
+        <div class="leg-num">${i+1}</div>
+        ${legLogo}
+        <div class="leg-info">
+          <div class="leg-player">${leg.player}</div>
+          <div class="leg-market">${leg.market} · <span style="color:var(--gold);font-weight:700;">${leg.odds}</span></div>
+          <div class="leg-reason">${leg.reasoning}</div>
+        </div>
+        <div class="leg-right">
+          <div class="leg-conf">${leg.confidence}%</div>
+          <div class="conf-badge ${tierCls}">${leg.confidence_tier}</div>
+        </div>
+        <button class="leg-result-btn" id="rb${i}" onclick="cycleResult(${i})" title="Tap to mark result">○</button>
+      </div>`;
+  });
+
+  document.getElementById('resultsSection').innerHTML = `
+
+    <div class="results-header">
+      ${d.round ? `<div class="round-badge">🏉 ${d.round}</div>` : '<div class="round-badge">🏉 AFL</div>'}
+
+      <div class="matchup">
+        <div class="matchup-team">
+          ${homeLogo}
+          <div class="matchup-team-name">${d.home_team || '—'}</div>
+        </div>
+        <div class="matchup-vs">VS</div>
+        <div class="matchup-team">
+          ${awayLogo}
+          <div class="matchup-team-name">${d.away_team || '—'}</div>
+        </div>
+      </div>
+
+      ${d.venue ? `<div class="venue-weather">${d.venue}${d.weather ? ' · ' + d.weather : ''}</div>` : ''}
+
+      <div class="meta-row">
+        <div class="meta-item">
+          <div class="meta-label">Est. Odds</div>
+          <div class="meta-value">${d.estimated_odds}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">True Prob</div>
+          <div class="meta-value">${d.combined_probability}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Stake</div>
+          <div class="meta-value">${d.recommended_stake}</div>
+        </div>
+      </div>
+
+      <div class="conf-row">
+        <span>Overall Confidence</span>
+        <span>${conf}/100</span>
+      </div>
+      <div class="conf-track">
+        <div class="conf-fill" id="confFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="verdict-banner ${isPlace ? 'place' : 'skip'}">
+      <div class="verdict-emoji">${isPlace ? '✅' : '⛔'}</div>
+      <div class="verdict-text">
+        <h4>${isPlace ? 'PLACE THE BET' : 'NO BET'}</h4>
+        <p>${d.verdict_reason}</p>
+      </div>
+    </div>
+
+    <div class="accuracy-card">
+      <div class="accuracy-title">Leg Results Tracker</div>
+      <div class="accuracy-grid">
+        <div class="accuracy-item"><div class="accuracy-num green" id="accW">0</div><div class="accuracy-lbl">Won</div></div>
+        <div class="accuracy-item"><div class="accuracy-num red" id="accL">0</div><div class="accuracy-lbl">Lost</div></div>
+        <div class="accuracy-item"><div class="accuracy-num gold" id="accP">—</div><div class="accuracy-lbl">Hit %</div></div>
+      </div>
+      <div class="acc-bar-label"><span>Accuracy</span><span id="accTally">0 / 0 legs</span></div>
+      <div class="acc-track"><div class="acc-fill" id="accBar" style="width:0%"></div></div>
+      <p class="acc-hint">Tap ○ on each leg to mark ✓ won or ✕ lost after the game</p>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Recommended Legs · ${(d.legs||[]).length} legs</div>
+    ${legsHTML}
+
+    ${d.market_signals_summary ? `
+    <div class="info-box gold">
+      <h4>📊 Market Signals</h4>
+      <p>${d.market_signals_summary}</p>
+    </div>` : ''}
+
+    ${d.key_risks ? `
+    <div class="info-box red">
+      <h4>⚠ Key Risks</h4>
+      <p>${d.key_risks}</p>
+    </div>` : ''}
+
+    ${d.self_challenge ? `
+    <div class="info-box blue">
+      <h4>🔍 Self Challenge</h4>
+      <p>${d.self_challenge}</p>
+    </div>` : ''}
+
+    ${(d.safe_build || d.aggressive_build) ? `
+    <div class="alt-builds">
+      <div class="alt-builds-title">Alternative Builds</div>
+      ${d.safe_build ? `<div class="alt-build"><div class="alt-build-label safe">Safer Build ›</div><p>${d.safe_build}</p></div>` : ''}
+      ${d.aggressive_build ? `<div class="alt-build"><div class="alt-build-label agg">Aggressive Build ›</div><p>${d.aggressive_build}</p></div>` : ''}
+    </div>` : ''}
+
+    <button class="btn-new" onclick="resetToSetup()">← Analyse Another Game</button>
+
+    <div class="footer">
+      AGM Builder · For entertainment purposes only<br>
+      Gamble responsibly · Gambling Help Online 1800 858 858
+    </div>
+  `;
+
+  setTimeout(() => {
+    const fill = document.getElementById('confFill');
+    if (fill) fill.style.width = conf + '%';
+  }, 150);
+}
+
+// ─── LEG RESULTS ─────────────────────────────────────────────
+function cycleResult(i) {
+  const card = document.getElementById('lc' + i);
+  const btn = document.getElementById('rb' + i);
+  const state = card.dataset.state;
+
+  if (state === 'pending') {
+    card.dataset.state = 'won';
+    card.classList.add('won'); card.classList.remove('lost');
+    btn.classList.add('won'); btn.classList.remove('lost');
+    btn.textContent = '✓';
+  } else if (state === 'won') {
+    card.dataset.state = 'lost';
+    card.classList.add('lost'); card.classList.remove('won');
+    btn.classList.add('lost'); btn.classList.remove('won');
+    btn.textContent = '✕';
+  } else {
+    card.dataset.state = 'pending';
+    card.classList.remove('won', 'lost');
+    btn.classList.remove('won', 'lost');
+    btn.textContent = '○';
+  }
+  updateAccuracy();
+}
+
+function updateAccuracy() {
+  const legs = currentResults?.legs || [];
+  let w = 0, l = 0;
+  legs.forEach((_, i) => {
+    const s = document.getElementById('lc' + i)?.dataset.state;
+    if (s === 'won') w++;
+    else if (s === 'lost') l++;
+  });
+  const total = w + l;
+  const pct = total > 0 ? Math.round((w / total) * 100) : null;
+  document.getElementById('accW').textContent = w;
+  document.getElementById('accL').textContent = l;
+  document.getElementById('accP').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('accTally').textContent = `${total} / ${legs.length} legs`;
+  document.getElementById('accBar').style.width = pct !== null ? pct + '%' : '0%';
+}
+
+// ─── ERROR ───────────────────────────────────────────────────
+function showError(title, msg) {
+  document.getElementById('setupSection').style.display = 'none';
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  const el = document.getElementById('errorSection');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="error-box"><h4>⚠ ${title}</h4><p>${msg}</p></div>
+    <button class="btn-new" onclick="resetToSetup()">← Try Again</button>`;
+}
+
+// ─── RESET ───────────────────────────────────────────────────
+function resetToSetup() {
+  uploadedImages = [];
+  currentResults = null;
+  renderPreviews();
+  document.getElementById('injuries').value = '';
+  document.getElementById('setupSection').style.display = 'block';
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('errorSection').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
