@@ -825,12 +825,13 @@
           </select>
         </div>
         <div class="input-group">
-          <label>Target</label>
+          <label>Target Payout</label>
           <select id="targetOdds">
-            <option value="6_10">$6–10</option>
-            <option value="10_20" selected>$10–20</option>
-            <option value="20_50">$20–50</option>
-            <option value="50_plus">$50+</option>
+            <option value="6_10">$6–$10</option>
+            <option value="10_20" selected>$10–$20</option>
+            <option value="20_50">$20–$50</option>
+            <option value="50_100">$50–$100</option>
+            <option value="100_plus">$100+</option>
           </select>
         </div>
       </div>
@@ -1051,7 +1052,7 @@ async function runAnalysis() {
     rain_wind: 'Rain and strong wind — major suppression of scoring and disposals'
   };
 
-  const targetMap = { '6_10': '$6–$10', '10_20': '$10–$20', '20_50': '$20–$50', '50_plus': '$50+' };
+  const targetMap = { '6_10': '$6–$10', '10_20': '$10–$20', '20_50': '$20–$50', '50_100': '$50–$100', '100_plus': '$100+' };
 
   showLoading();
   animateSteps();
@@ -1068,11 +1069,12 @@ RULES:
 - Include disposal legs and goal scorer legs
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
+- CRITICAL ODDS: Sportsbet applies a 40-60% SGM correlation discount to all multi odds. You MUST provide two odds fields: "raw_odds" (mathematical multiplication of all leg odds) and "estimated_odds" (raw_odds discounted by 50% to reflect actual Sportsbet payout). The user target of ${targetMap[targetOdds]} refers to the ACTUAL Sportsbet payout after discount. To hit $10-$20 actual payout you need $20-$40 raw odds. Always set estimated_odds roughly half of raw_odds.
 
 YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
 
 Required JSON structure:
-{"home_team":"Team A","away_team":"Team B","round":"Round 20","venue":"Stadium name","verdict":"PLACE","verdict_reason":"One sentence reason","recommended_stake":"$10","overall_confidence":48,"combined_probability":"3.4%","estimated_odds":"$40-$60","legs":[{"player":"Player Name","team":"Team Name","market":"OVER 27.5 Disposals","odds":"$1.82","confidence":62,"confidence_tier":"HIGH","reasoning":"One sentence","market_signal":"Over shorter — market backs the over"}],"market_signals_summary":"Summary of market signals","key_risks":"Key risks","self_challenge":"Honest challenge","safe_build":"Safer alternative","aggressive_build":"Higher risk alternative"}`;
+{"home_team":"Team A","away_team":"Team B","round":"Round 21 2026","venue":"Stadium name","verdict":"PLACE","verdict_reason":"One sentence reason","recommended_stake":"$10","overall_confidence":48,"combined_probability":"3.4%","raw_odds":"$20-$30","estimated_odds":"$10-$15","legs":[{"player":"Player Name","team":"Team Name","market":"OVER 27.5 Disposals","odds":"$1.82","confidence":62,"confidence_tier":"HIGH","reasoning":"One sentence","market_signal":"Over shorter — market backs the over"}],"market_signals_summary":"Summary of market signals","key_risks":"Key risks","self_challenge":"Honest challenge","safe_build":"Safer alternative","aggressive_build":"Higher risk alternative"}`;
 
   const userMsg = [
     {
@@ -1214,18 +1216,21 @@ function showResults(d) {
 
       <div class="meta-row">
         <div class="meta-item">
-          <div class="meta-label">Est. Odds</div>
-          <div class="meta-value">${d.estimated_odds}</div>
+          <div class="meta-label">Sportsbet Payout</div>
+          <div class="meta-value" style="font-size:14px;">${d.estimated_odds || d.raw_odds || '—'}</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">True Prob</div>
-          <div class="meta-value">${d.combined_probability}</div>
+          <div class="meta-value" style="font-size:14px;">${d.combined_probability}</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Stake</div>
-          <div class="meta-value">${d.recommended_stake}</div>
+          <div class="meta-value" style="font-size:14px;">${d.recommended_stake}</div>
         </div>
       </div>
+      ${d.raw_odds ? `<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-muted);line-height:1.5;">
+        <span style="color:var(--gold);font-weight:700;">SGM Discount Applied</span> — Raw multiplied odds: <span style="color:var(--text);font-weight:600;">${d.raw_odds}</span> → Sportsbet pays approx <span style="color:var(--green);font-weight:600;">${d.estimated_odds}</span> after 50% correlation discount. This is normal for all Same Game Multis.
+      </div>` : ''}
 
       <div class="conf-row">
         <span>Overall Confidence</span>
