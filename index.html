@@ -969,12 +969,6 @@ function logoImg(name, cls) {
   return `<div class="leg-logo-placeholder">🏉</div>`;
 }
 
-function logoImg(name, cls) {
-  const src = getLogoUrl(name);
-  if (src) return `<img src="${src}" class="${cls}" alt="${name}" onerror="this.style.display='none'">`;
-  return `<div class="leg-logo-placeholder">🏉</div>`;
-}
-
 // ─── API KEY ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('agm_key');
@@ -1180,10 +1174,7 @@ function showResults(d) {
   let legsHTML = '';
   (d.legs || []).forEach((leg, i) => {
     const tierCls = leg.confidence_tier === 'HIGH' ? 'conf-high' : leg.confidence_tier === 'LOW' ? 'conf-low' : 'conf-med';
-    const legLogoSrc = getLogoUrl(leg.team);
-    const legLogo = legLogoSrc
-      ? `<img src="${legLogoSrc}" alt="${leg.team}" class="leg-logo" onerror="this.outerHTML='<div class=leg-logo-placeholder>🏉</div>'">`
-      : `<div class="leg-logo-placeholder">🏉</div>`;
+    const legLogo = logoImg(leg.team, 'leg-logo');
 
     legsHTML += `
       <div class="leg-card" id="lc${i}" data-state="pending">
