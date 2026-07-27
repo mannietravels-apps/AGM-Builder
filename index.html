@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>AGM Builder — AFL Same Game Multi Analyser</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23f0b429'/><text y='72' x='50' text-anchor='middle' font-size='62'>🏉</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23f0b429'/><text y='72' x='50' text-anchor='middle' font-size='62'>🏉</text></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AGM Builder">
+<meta name="theme-color" content="#0a0a0a">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -691,12 +697,8 @@
 
 <header class="header">
   <div class="header-inner">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="12" cy="12" rx="10" ry="6" stroke="#0a0a0a" stroke-width="2"/>
-        <line x1="2" y1="12" x2="22" y2="12" stroke="#0a0a0a" stroke-width="2"/>
-        <line x1="12" y1="6" x2="12" y2="18" stroke="#0a0a0a" stroke-width="2"/>
-      </svg>
+    <div class="logo-mark" style="font-size:20px;">
+      🏉
     </div>
     <div class="header-text">
       <h1>AGM Builder</h1>
@@ -753,6 +755,10 @@
         <div class="input-group">
           <label>Min Legs</label>
           <select id="minLegs">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
             <option value="6" selected>6</option>
             <option value="7">7</option>
             <option value="8">8</option>
@@ -761,9 +767,20 @@
         <div class="input-group">
           <label>Max Legs</label>
           <select id="maxLegs">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
             <option value="8">8</option>
             <option value="9">9</option>
             <option value="10" selected>10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
           </select>
         </div>
         <div class="input-group">
@@ -979,51 +996,22 @@ async function runAnalysis() {
   showLoading();
   animateSteps();
 
-  const systemPrompt = `You are an expert AFL analyst, professional sports bettor and quantitative risk manager. Your job is to read Sportsbet market screenshots and build the best possible Same Game Multi (AGM).
+  const systemPrompt = `You are an expert AFL analyst and sports betting analyst. Analyse the Sportsbet screenshots and return a JSON object.
 
-CRITICAL INSTRUCTIONS:
-- Read the team names directly from the screenshots — they appear at the top of every Sportsbet screen
-- Read every disposal line and both the over and under odds exactly as shown
-- The shorter-priced side signals bookmaker confidence — always identify this
-- Read every goal scorer's last 5 games and season average exactly as shown
+RULES:
+- Read team names from the top of each screenshot
+- Read every disposal line, over odds, under odds exactly as shown
+- Shorter-priced side = bookmaker signal — always note it
+- Read goal scorer last 5 games and season average exactly as shown
 - Build ${minLegs}–${maxLegs} legs targeting ${targetMap[targetOdds]} combined odds
-- Include both disposal legs (overs AND unders where signal supports) and goal scorer legs
-- Give each leg a true probability confidence percentage
-- Multiply all probabilities to get combined probability
-- If no valuable AGM exists, set verdict to NO BET — never force a selection
-- Be honest and challenge your own reasoning
+- Include disposal legs and goal scorer legs
+- Give each leg a confidence percentage (true probability)
+- If no value exists say NO BET
 
-RESPONSE: Return ONLY valid JSON with no markdown fences, no preamble:
+YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
 
-{
-  "home_team": "Exact team name from screenshots",
-  "away_team": "Exact team name from screenshots",
-  "round": "Round X or empty string",
-  "venue": "Venue name if visible, else empty string",
-  "verdict": "PLACE",
-  "verdict_reason": "One sentence",
-  "recommended_stake": "$10",
-  "overall_confidence": 48,
-  "combined_probability": "3.4%",
-  "estimated_odds": "$40–$60",
-  "legs": [
-    {
-      "player": "Full player name",
-      "team": "Team name",
-      "market": "OVER 27.5 Disposals",
-      "odds": "$1.82",
-      "confidence": 62,
-      "confidence_tier": "HIGH",
-      "reasoning": "One sentence explaining the value",
-      "market_signal": "Over shorter at $1.82 vs under $1.91 — market backs the over"
-    }
-  ],
-  "market_signals_summary": "What the disposal market pricing is telling you overall",
-  "key_risks": "2–3 key risks that could bust the multi",
-  "self_challenge": "Honest challenge to the analysis",
-  "safe_build": "Description of a safer lower-leg alternative",
-  "aggressive_build": "Description of a higher-risk higher-odds alternative"
-}`;
+Required JSON structure:
+{"home_team":"Team A","away_team":"Team B","round":"Round X","venue":"Stadium name","verdict":"PLACE","verdict_reason":"One sentence reason","recommended_stake":"$10","overall_confidence":48,"combined_probability":"3.4%","estimated_odds":"$40-$60","legs":[{"player":"Player Name","team":"Team Name","market":"OVER 27.5 Disposals","odds":"$1.82","confidence":62,"confidence_tier":"HIGH","reasoning":"One sentence","market_signal":"Over shorter — market backs the over"}],"market_signals_summary":"Summary of market signals","key_risks":"Key risks","self_challenge":"Honest challenge","safe_build":"Safer alternative","aggressive_build":"Higher risk alternative"}`;
 
   const userMsg = [
     {
@@ -1063,9 +1051,14 @@ Read the team names, round, disposal lines, goal markets and all odds directly f
     }
 
     const data = await res.json();
-    const raw = data.content.map(b => b.text || '').join('');
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const json = JSON.parse(clean);
+    const raw = data.content.map(b => b.text || "").join("");
+    let json = null;
+    try { json = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch(e1) {
+      try { const m = raw.match(/\{[\s\S]*\}/); if(m) json = JSON.parse(m[0]); } catch(e2) {
+        try { const s=raw.indexOf("{"),e=raw.lastIndexOf("}"); if(s!==-1&&e!==-1) json=JSON.parse(raw.slice(s,e+1)); } catch(e3) { throw new Error("Could not parse response. Please try again — too much text returned."); }
+      }
+    }
+    if(!json) throw new Error("Empty response. Please try again.");
     currentResults = json;
     showResults(json);
 
