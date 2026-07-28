@@ -1061,6 +1061,7 @@ async function runAnalysis() {
 
 RULES:
 - Read team names from the top of each screenshot
+- CRITICAL TEAM ASSIGNMENT: Determine each player's team by reading the jersey/shirt colour shown next to their name in the screenshots. Each player has a small jersey icon — read its colour and match it to the correct AFL team. For example: navy blue and white hoops = Geelong, black and white = Collingwood, brown and gold = Hawthorn, red white and blue = Brisbane, purple = Fremantle, red sash = Melbourne etc. ALWAYS use the jersey colour in the image as the source of truth for team assignment, not text position or assumptions
 - The current AFL season is 2026. We are currently in Round 21. Rounds are numbered 1-25. The "round" field must be "Round X 2026" where X is a number between 1 and 25 — NEVER put just a year like 2025 or 2026 as the round. Correct example: "Round 21 2026"
 - Read every disposal line, over odds, under odds exactly as shown
 - Shorter-priced side = bookmaker signal — always note it
