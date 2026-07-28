@@ -1077,7 +1077,7 @@ RULES:
 - Include disposal legs and goal scorer legs
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
-- CRITICAL ODDS: Sportsbet applies a 40-60% SGM correlation discount to all multi odds. You MUST provide two odds fields: "raw_odds" (mathematical multiplication of all leg odds) and "estimated_odds" (raw_odds discounted by 50% to reflect actual Sportsbet payout). The user target of ${targetMap[targetOdds]} refers to the ACTUAL Sportsbet payout after discount. To hit $10-$20 actual payout you need $20-$40 raw odds. Always set estimated_odds roughly half of raw_odds.
+- ODDS: Calculate raw_odds by multiplying all leg odds together. Set estimated_odds equal to raw_odds. Do not apply any discount — the user will check the real Sportsbet payout themselves.
 
 YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
 
@@ -1224,8 +1224,8 @@ function showResults(d) {
 
       <div class="meta-row">
         <div class="meta-item">
-          <div class="meta-label">Sportsbet Payout</div>
-          <div class="meta-value" style="font-size:14px;">${d.estimated_odds || d.raw_odds || '—'}</div>
+          <div class="meta-label">Raw Odds</div>
+          <div class="meta-value" style="font-size:14px;">${d.raw_odds || d.estimated_odds || '—'}</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">True Prob</div>
@@ -1236,9 +1236,9 @@ function showResults(d) {
           <div class="meta-value" style="font-size:14px;">${d.recommended_stake}</div>
         </div>
       </div>
-      ${d.raw_odds ? `<div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-muted);line-height:1.5;">
-        <span style="color:var(--gold);font-weight:700;">SGM Discount Applied</span> — Raw multiplied odds: <span style="color:var(--text);font-weight:600;">${d.raw_odds}</span> → Sportsbet pays approx <span style="color:var(--green);font-weight:600;">${d.estimated_odds}</span> after 50% correlation discount. This is normal for all Same Game Multis.
-      </div>` : ''}
+      <div style="background:rgba(240,180,41,0.06);border:1px solid rgba(240,180,41,0.15);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text-muted);line-height:1.5;">
+        <span style="color:var(--gold);font-weight:700;">⚠ Check Sportsbet SGM Builder</span> — The actual payout varies based on leg correlation. Always check the real price in Sportsbet before placing.
+      </div>
 
       <div class="conf-row">
         <span>Overall Confidence</span>
