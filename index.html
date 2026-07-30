@@ -1088,7 +1088,14 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Include disposal legs and goal scorer legs
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
-- CONSISTENCY RULE: You must select legs deterministically. Follow this exact priority order every time: (1) Select ALL disposal legs where the player has hit the line in 4 or 5 of their last 5 games — these are automatic inclusions. (2) Then select disposal legs where the player hit the line in 3 of 5 games AND season average exceeds the line. (3) Then add goal scorer legs starting with highest season average first. (4) Never skip a leg that qualifies under rule 1 or 2. Never include a leg that does not qualify. This ensures identical results every run.
+- LEG TYPE PRIORITY — DISPOSALS FIRST: The user's core strategy is disposal overs/unders with goal scorer legs as a smaller top-up. Build legs in this exact ratio: roughly 70-80% of legs should be disposal market legs (overs and unders), and only 20-30% should be goal scorer legs. Disposal legs have more genuine statistical value and lower correlation risk between legs.
+- CONSISTENCY RULE — DETERMINISTIC SELECTION ORDER: Follow this exact priority every time:
+  (1) FIRST select ALL disposal legs where the player hit the line in 4 or 5 of their last 5 games — automatic inclusions, these are the foundation of the build
+  (2) THEN select disposal legs where the player hit the line in 3 of 5 games AND season average exceeds the line
+  (3) If more legs are still needed to reach the minimum leg count, select additional disposal legs with the strongest market signal (biggest gap between over/under odds)
+  (4) ONLY THEN add goal scorer legs — maximum 2-3 goal legs regardless of how many total legs are requested, starting with highest season average and best last-5 consistency
+  (5) If the requested max legs cannot be filled with quality disposal legs, it is better to include fewer high-quality disposal legs than to pad with more goal scorer legs
+  This ensures identical results every run and keeps the build disposal-heavy as per the user's actual strategy.
 - ODDS: Calculate raw_odds by multiplying all leg odds together. Set estimated_odds equal to raw_odds. Do not apply any discount — the user will check the real Sportsbet payout themselves.
 
 YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
