@@ -859,7 +859,7 @@
         </svg>
       </div>
       <h3>Upload Screenshots</h3>
-      <p>Tap to choose or drag & drop<br>Disposal markets, goals — any Sportsbet screen</p>
+      <p>Tap to choose or drag & drop<br>Disposal O/U odds + disposal form (last 5) + goal scorer markets</p>
     </div>
 
     <div id="previewArea" style="display:none; margin-bottom:12px;">
@@ -1078,11 +1078,19 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - The current AFL season is 2026. We are currently in Round 21. Rounds are numbered 1-25. The "round" field must be "Round X 2026" where X is a number between 1 and 25 — NEVER put just a year like 2025 or 2026 as the round. Correct example: "Round 21 2026"
 - Read every disposal line, over odds, under odds exactly as shown
 - Shorter-priced side = bookmaker signal — always note it
+- SCREENSHOT TYPES YOU WILL RECEIVE: The user uploads TWO different disposal-related screenshot types that must be CROSS-REFERENCED together:
+  TYPE 1 — "Disposal Overs/Unders market": Shows a player name, a line (e.g. "24.5"), an Over odds price and an Under odds price (typically both close to $1.80-$1.95). This screenshot usually does NOT show any game-by-game form data, only the two prices.
+  TYPE 2 — "Disposal form/last-5 market": Shows the same or overlapping players with their last 5 games disposal counts listed individually (e.g. "27, 31, 28, 36, 39") plus season average. This screenshot has its own separate odds (usually much shorter, like $1.10-$1.30) for thresholds like 20+, 25+, 30+ disposals — IGNORE those specific odds, they are a different market. ONLY use this screenshot for the raw last-5 game numbers and season average.
+  YOUR JOB: Match each player between the two screenshot types by name. Take the Over/Under ODDS from TYPE 1 and the ACTUAL FORM (last 5 games + season average) from TYPE 2. Combine them to make an informed decision.
+  IMPORTANT — MULTIPLE SCREENSHOTS OF EACH TYPE: The user may upload several screenshots of TYPE 1 (multiple disposal O/U odds screens) and several of TYPE 2 (multiple disposal form screens) in a single batch, sometimes 10+ images total including goal markets and team news. You MUST scan EVERY single uploaded image individually and build a complete mental roster of every player and every data point found across ALL images before making any leg decisions. Do not stop scanning after the first few images. A player's odds might be on screenshot 3 while their form is on screenshot 7 — you must find and match both regardless of upload order or position in the batch.
+
 - OVER/UNDER DECISION PROCESS: For each disposal player use this exact process every time:
-  STEP 1 — Read the line (e.g. 24.5) and count how many of the last 5 games the player exceeded that line. Also check season average vs the line.
-  STEP 2 — Note which side is shorter priced (bookmaker signal).
-  STEP 3 — Make the decision: if stats and market agree, strong confidence. If stats say OVER (hit 4 of 5) but market slightly favours UNDER, trust the STATS — the player's actual form outweighs a small price difference. Only follow the market signal over stats if the price difference is significant (more than $0.08 gap) AND the last 5 form is genuinely mixed (2-3 of 5). 
-  STEP 4 — This decision must be identical every run for the same screenshots. Temperature is 0 so be deterministic.
+  STEP 1 — Find the player's TYPE 1 line (e.g. 24.5) and TYPE 1 over/under odds.
+  STEP 2 — Find the SAME player's last 5 games and season average from TYPE 2. Count how many of the last 5 games exceeded the TYPE 1 line.
+  STEP 3 — Note which TYPE 1 side is shorter priced (bookmaker signal).
+  STEP 4 — Make the decision: if form (4-5 of 5 games clear the line) and market signal agree, strong confidence. If form says OVER (hit 4 of 5) but market slightly favours UNDER, trust the FORM — actual recent performance outweighs a small price difference. Only follow the market signal over form if the price gap is significant (more than $0.08) AND form is genuinely mixed (2-3 of 5).
+  STEP 5 — If a player only appears in TYPE 1 (odds only, no form screenshot uploaded for them), use season-long knowledge and the market signal as the best available evidence, and note lower confidence due to missing form data.
+  STEP 6 — This decision must be identical every run for the same screenshots. Temperature is 0 so be deterministic.
 - Read goal scorer last 5 games and season average exactly as shown
 - Build ${minLegs}–${maxLegs} legs targeting ${targetMap[targetOdds]} combined odds
 - Include disposal legs and goal scorer legs
