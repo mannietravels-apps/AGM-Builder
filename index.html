@@ -905,6 +905,7 @@
 
 <script>
 let uploadedImages = [];
+let historyExpandState = {}; // gameId -> true (expanded) / false (collapsed). Undefined = expanded by default.
 let currentResults = null;
 
 // ─── TEAM LOGOS ──────────────────────────────────────────────
@@ -1412,6 +1413,12 @@ function hideHistory() {
   window.scrollTo(0, 0);
 }
 
+function toggleHistoryExpand(gameId) {
+  const current = historyExpandState[gameId] !== false;
+  historyExpandState[gameId] = !current;
+  renderHistory();
+}
+
 function cycleHistoryResult(gameId, legIndex) {
   const history = getHistory();
   const gameIdx = history.findIndex(g => g.id === gameId);
@@ -1469,6 +1476,7 @@ function renderHistory() {
     const hBadge = teamBadge(g.home_team, 'sm');
     const aBadge = teamBadge(g.away_team, 'sm');
     const pctColor = gPct === null ? 'var(--text-muted)' : gPct >= 60 ? 'var(--green)' : gPct >= 40 ? 'var(--gold)' : 'var(--red)';
+    const isExpanded = historyExpandState[g.id] !== false;
 
     let legsHTML = legs.map((leg, li) => {
       const rc = leg.result === 'won' ? 'var(--green)' : leg.result === 'lost' ? 'var(--red)' : 'var(--text-muted)';
@@ -1510,10 +1518,11 @@ function renderHistory() {
           <div style="font-size:11px;font-weight:700;color:${g.verdict === 'PLACE' ? 'var(--green)' : 'var(--red)'};">${g.verdict === 'PLACE' ? '✅ PLACE' : '⛔ NO BET'}</div>
         </div>
       </div>
-      <details>
-        <summary style="font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;padding:4px 0;list-style:none;">${legs.length} legs — tap to view</summary>
-        <div style="margin-top:8px;">${legsHTML}</div>
-      </details>
+      <div onclick="toggleHistoryExpand('${g.id}')" style="font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;padding:6px 0;display:flex;align-items:center;justify-content:space-between;">
+        <span>${legs.length} legs</span>
+        <span style="color:var(--gold);">${isExpanded ? '▲ hide' : '▼ show'}</span>
+      </div>
+      <div style="${isExpanded ? '' : 'display:none;'}margin-top:4px;">${legsHTML}</div>
       <button onclick="deleteGame('${g.id}')" style="width:100%;margin-top:10px;background:none;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px;font-size:12px;color:var(--red);cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">🗑 Delete Game</button>
     </div>`;
   });
