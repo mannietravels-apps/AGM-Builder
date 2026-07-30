@@ -704,9 +704,12 @@
       <h1>AGM Builder</h1>
       <p>AFL Same Game Multi Analyser</p>
     </div>
-    <div class="api-status">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">No key</span>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
+      <button onclick="showHistory()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;" title="Game History">📋</button>
+      <div class="api-status" style="margin-left:0;">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">No key</span>
+      </div>
     </div>
   </div>
 </header>
@@ -895,6 +898,9 @@
   <!-- ERROR -->
   <div id="errorSection" style="display:none;"></div>
 
+  <!-- HISTORY -->
+  <div id="historySection" style="display:none;"></div>
+
 </main>
 
 <script>
@@ -1066,7 +1072,7 @@ async function runAnalysis() {
 
   const systemPrompt = `You are an expert AFL analyst and sports betting analyst. Analyse the Sportsbet screenshots and return a JSON object.
 
-RULES:
+RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Read team names from the top of each screenshot
 - CRITICAL TEAM ASSIGNMENT: Use BOTH the jersey colour in the screenshot AND your AFL roster knowledge to assign teams. The jersey colours in Sportsbet are small but use these to guide you: navy blue hoops = Geelong, black and white stripes = Collingwood, brown and gold = Hawthorn, red white blue = Brisbane, purple = Fremantle, red and blue = Melbourne, dark navy = Carlton, red black and gold = Richmond, teal = Port Adelaide, red white and black = St Kilda, red = Sydney, royal blue and gold = West Coast, red white and blue = Western Bulldogs, red and gold = GWS, red and gold suns = Gold Coast, black red and yellow = Essendon, navy and red = North Melbourne, red and yellow = Adelaide. Then cross-check against these 2026 key rosters: GEELONG players include Bailey Smith, Max Holmes, Oliver Dempsey, Patrick Dangerfield, Jeremy Cameron, Tom Stewart, Rhys Stanley, Mark Blicavs, Shaun Mannagh, Lawson Humphries, Oliver Henry, Sam De Koning, Shannon Neale, Gryan Miers, Tanner Bruhn. COLLINGWOOD players include Nick Daicos, Josh Daicos, Jordan De Goey, Scott Pendlebury, Jack Crisp, Daniel McStay, Tim Membrey, Lachie Schultz, Brayden Maynard, Darcy Moore, Mason Cox, Patrick Lipinski, Harvey Harrison, Bobby Hill, Oleg Markov, Cooper Sharman, Ash Johnson. HAWTHORN players include Jai Newcombe, James Sicily, Will Day, Josh Ward, Jack Gunston, Mabior Chol, Mitch Lewis, Dylan Moore, Connor Macdonald, Nick Watson, Blake Hardwick, Karl Amon, Denver Grainger-Barras, Sam Frost. If jersey colour and roster knowledge conflict, trust the roster knowledge
 - The current AFL season is 2026. We are currently in Round 21. Rounds are numbered 1-25. The "round" field must be "Round X 2026" where X is a number between 1 and 25 — NEVER put just a year like 2025 or 2026 as the round. Correct example: "Round 21 2026"
@@ -1082,6 +1088,7 @@ RULES:
 - Include disposal legs and goal scorer legs
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
+- CONSISTENCY RULE: You must select legs deterministically. Follow this exact priority order every time: (1) Select ALL disposal legs where the player has hit the line in 4 or 5 of their last 5 games — these are automatic inclusions. (2) Then select disposal legs where the player hit the line in 3 of 5 games AND season average exceeds the line. (3) Then add goal scorer legs starting with highest season average first. (4) Never skip a leg that qualifies under rule 1 or 2. Never include a leg that does not qualify. This ensures identical results every run.
 - ODDS: Calculate raw_odds by multiplying all leg odds together. Set estimated_odds equal to raw_odds. Do not apply any discount — the user will check the real Sportsbet payout themselves.
 
 YOUR ENTIRE RESPONSE MUST BE ONLY A JSON OBJECT. NO TEXT BEFORE OR AFTER. NO EXPLANATION. NO MARKDOWN. START YOUR RESPONSE WITH { AND END WITH }
@@ -1179,6 +1186,10 @@ function showLoading() {
 
 // ─── RESULTS ─────────────────────────────────────────────────
 function showResults(d) {
+  // Assign unique ID for history tracking
+  if (!d._id) d._id = Date.now().toString();
+  // Auto-save when analysis completes
+  setTimeout(() => saveCurrentGame(), 500);
   document.getElementById('loadingSection').style.display = 'none';
   document.getElementById('resultsSection').style.display = 'block';
 
@@ -1210,6 +1221,15 @@ function showResults(d) {
   });
 
   document.getElementById('resultsSection').innerHTML = `
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="editAnalysis()" style="flex:1;background:var(--surface);color:var(--text);border:1px solid var(--border-light);border-radius:10px;padding:11px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        ← Edit Settings
+      </button>
+      <button onclick="rerunAnalysis()" style="flex:1;background:var(--gold);color:var(--black);border:none;border-radius:10px;padding:11px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        ↻ Re-run
+      </button>
+    </div>
 
     <div class="results-header">
       ${d.round ? `<div class="round-badge">🏉 ${d.round}</div>` : '<div class="round-badge">🏉 AFL</div>'}
@@ -1303,7 +1323,7 @@ function showResults(d) {
       ${d.aggressive_build ? `<div class="alt-build"><div class="alt-build-label agg">Aggressive Build ›</div><p>${d.aggressive_build}</p></div>` : ''}
     </div>` : ''}
 
-    <button class="btn-new" onclick="resetToSetup()">← Analyse Another Game</button>
+    <button class="btn-new" onclick="resetToSetup()">✕ Start New Game (clears uploads)</button>
 
     <div class="footer">
       AGM Builder · For entertainment purposes only<br>
@@ -1315,6 +1335,180 @@ function showResults(d) {
     const fill = document.getElementById('confFill');
     if (fill) fill.style.width = conf + '%';
   }, 150);
+}
+
+// ─── HISTORY STORAGE ─────────────────────────────────────────
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('agm_history') || '[]'); }
+  catch(e) { return []; }
+}
+function saveHistory(h) {
+  try { localStorage.setItem('agm_history', JSON.stringify(h)); }
+  catch(e) { console.error('Save failed', e); }
+}
+function saveCurrentGame() {
+  if (!currentResults) return;
+  const legs = currentResults.legs || [];
+  const results = legs.map((_, i) => document.getElementById('lc' + i)?.dataset.state || 'pending');
+  const history = getHistory();
+  const id = currentResults._id;
+  const existing = history.findIndex(h => h.id === id);
+  const entry = {
+    id,
+    home_team: currentResults.home_team || '',
+    away_team: currentResults.away_team || '',
+    round: currentResults.round || '',
+    venue: currentResults.venue || '',
+    verdict: currentResults.verdict || '',
+    raw_odds: currentResults.raw_odds || currentResults.estimated_odds || '',
+    overall_confidence: currentResults.overall_confidence || 0,
+    combined_probability: currentResults.combined_probability || '',
+    recommended_stake: currentResults.recommended_stake || '',
+    legs: legs.map((leg, i) => ({
+      player: leg.player,
+      team: leg.team,
+      market: leg.market,
+      odds: leg.odds,
+      confidence: leg.confidence,
+      result: results[i]
+    })),
+    saved_at: new Date().toISOString()
+  };
+  if (existing >= 0) history[existing] = entry;
+  else history.unshift(entry);
+  if (history.length > 50) history.splice(50);
+  saveHistory(history);
+}
+
+// ─── HISTORY SCREEN ──────────────────────────────────────────
+function showHistory() {
+  document.getElementById('setupSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('errorSection').style.display = 'none';
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('historySection').style.display = 'block';
+  renderHistory();
+  window.scrollTo(0, 0);
+}
+
+function hideHistory() {
+  document.getElementById('historySection').style.display = 'none';
+  document.getElementById('setupSection').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function deleteGame(id) {
+  if (!confirm('Delete this game?')) return;
+  const h = getHistory().filter(g => g.id !== id);
+  saveHistory(h);
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const el = document.getElementById('historySection');
+  let totalLegs = 0, wonLegs = 0, lostLegs = 0;
+  history.forEach(g => {
+    (g.legs || []).forEach(l => {
+      if (l.result === 'won') { wonLegs++; totalLegs++; }
+      else if (l.result === 'lost') { lostLegs++; totalLegs++; }
+    });
+  });
+  const hitPct = totalLegs > 0 ? Math.round((wonLegs / totalLegs) * 100) : null;
+
+  if (history.length === 0) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <button onclick="hideHistory()" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;">←</button>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);">Game History</div>
+      </div>
+      <div class="card" style="text-align:center;padding:40px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">🏉</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">No games saved yet</div>
+        <div style="font-size:13px;color:var(--text-muted);">Analyse a game and mark your results to start tracking accuracy</div>
+      </div>`;
+    return;
+  }
+
+  let gamesHTML = '';
+  history.forEach(g => {
+    const legs = g.legs || [];
+    const gW = legs.filter(l => l.result === 'won').length;
+    const gL = legs.filter(l => l.result === 'lost').length;
+    const gT = gW + gL;
+    const gPct = gT > 0 ? Math.round((gW / gT) * 100) : null;
+    const date = g.saved_at ? new Date(g.saved_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'2-digit'}) : '';
+    const hBadge = teamBadge(g.home_team, 'sm');
+    const aBadge = teamBadge(g.away_team, 'sm');
+    const pctColor = gPct === null ? 'var(--text-muted)' : gPct >= 60 ? 'var(--green)' : gPct >= 40 ? 'var(--gold)' : 'var(--red)';
+
+    let legsHTML = legs.map(leg => {
+      const rc = leg.result === 'won' ? 'var(--green)' : leg.result === 'lost' ? 'var(--red)' : 'var(--text-muted)';
+      const ri = leg.result === 'won' ? '✓' : leg.result === 'lost' ? '✕' : '○';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="width:20px;height:20px;border-radius:50%;border:2px solid ${rc};display:flex;align-items:center;justify-content:center;font-size:10px;color:${rc};flex-shrink:0;">${ri}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${leg.player}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${leg.market} · ${leg.odds} · <span style="color:var(--gold);">${leg.confidence}%</span></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    gamesHTML += `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+          ${hBadge}<span style="font-size:10px;color:var(--text-muted);">vs</span>${aBadge}
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.home_team} vs ${g.away_team}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${g.round} · ${date}</div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:${pctColor};">${gPct !== null ? gPct + '%' : '—'}</div>
+          <div style="font-size:10px;color:var(--text-muted);">${gW}W · ${gL}L</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+        <div style="background:var(--surface);border-radius:8px;padding:7px;text-align:center;border:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Odds</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--gold);">${g.raw_odds || '—'}</div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:7px;text-align:center;border:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Confidence</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text);">${g.overall_confidence}/100</div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:7px;text-align:center;border:1px solid var(--border);">
+          <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Verdict</div>
+          <div style="font-size:11px;font-weight:700;color:${g.verdict === 'PLACE' ? 'var(--green)' : 'var(--red)'};">${g.verdict === 'PLACE' ? '✅ PLACE' : '⛔ NO BET'}</div>
+        </div>
+      </div>
+      <details>
+        <summary style="font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;padding:4px 0;list-style:none;">${legs.length} legs — tap to view</summary>
+        <div style="margin-top:8px;">${legsHTML}</div>
+      </details>
+      <button onclick="deleteGame('${g.id}')" style="width:100%;margin-top:10px;background:none;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px;font-size:12px;color:var(--red);cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">🗑 Delete Game</button>
+    </div>`;
+  });
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="hideHistory()" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:4px;">←</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);">Game History</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+      <div class="accuracy-item"><div class="accuracy-num green">${wonLegs}</div><div class="accuracy-lbl">Won</div></div>
+      <div class="accuracy-item"><div class="accuracy-num red">${lostLegs}</div><div class="accuracy-lbl">Lost</div></div>
+      <div class="accuracy-item"><div class="accuracy-num gold">${hitPct !== null ? hitPct + '%' : '—'}</div><div class="accuracy-lbl">Hit Rate</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+        <span>Overall leg accuracy</span>
+        <span style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">${totalLegs} legs · ${history.length} games</span>
+      </div>
+      <div class="acc-track"><div class="acc-fill" style="width:${hitPct || 0}%"></div></div>
+    </div>
+    <div class="section-label">${history.length} Saved Game${history.length !== 1 ? 's' : ''}</div>
+    ${gamesHTML}`;
 }
 
 // ─── LEG RESULTS ─────────────────────────────────────────────
@@ -1340,6 +1534,7 @@ function cycleResult(i) {
     btn.textContent = '○';
   }
   updateAccuracy();
+  saveCurrentGame();
 }
 
 function updateAccuracy() {
@@ -1369,6 +1564,23 @@ function showError(title, msg) {
   el.innerHTML = `
     <div class="error-box"><h4>⚠ ${title}</h4><p>${msg}</p></div>
     <button class="btn-new" onclick="resetToSetup()">← Try Again</button>`;
+}
+
+// ─── EDIT — go back to setup keeping uploads ─────────────────
+function editAnalysis() {
+  // Keep uploadedImages intact — just show setup screen
+  document.getElementById('setupSection').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('errorSection').style.display = 'none';
+  // Re-render previews so user can add/remove screenshots
+  renderPreviews();
+  window.scrollTo(0, 0);
+}
+
+// ─── RERUN — run analysis again with same uploads ─────────────
+function rerunAnalysis() {
+  document.getElementById('resultsSection').style.display = 'none';
+  runAnalysis();
 }
 
 // ─── RESET ───────────────────────────────────────────────────
