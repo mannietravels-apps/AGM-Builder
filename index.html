@@ -31,12 +31,18 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html, body {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
+  }
+
   body {
     background: var(--black);
     color: var(--text);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
   }
 
   /* HEADER */
@@ -867,6 +873,8 @@
       <p class="preview-count" id="previewCount" style="margin-top:8px;"></p>
     </div>
 
+    <div id="calibrationNote" style="display:none;font-size:11px;color:var(--gold);text-align:center;margin-bottom:10px;padding:8px;background:rgba(240,180,41,0.06);border:1px solid rgba(240,180,41,0.15);border-radius:8px;"></div>
+
     <button class="btn-analyse" onclick="runAnalysis()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
         <polygon points="5 3 19 12 5 21 5 3"/>
@@ -940,8 +948,8 @@ const AFL_TEAMS = {
   'power':                  { abbr: 'POR', bg: '#008AAB', text: '#000000' },
   'richmond':               { abbr: 'RIC', bg: '#FFD200', text: '#000000' },
   'tigers':                 { abbr: 'RIC', bg: '#FFD200', text: '#000000' },
-  'st kilda':               { abbr: 'STK', bg: '#ED0F05', text: '#FFFFFF' },
-  'saints':                 { abbr: 'STK', bg: '#ED0F05', text: '#FFFFFF' },
+  'st kilda':               { abbr: 'STK', bg: '#000000', text: '#ED0F05' },
+  'saints':                 { abbr: 'STK', bg: '#000000', text: '#ED0F05' },
   'sydney':                 { abbr: 'SYD', bg: '#E2001A', text: '#FFFFFF' },
   'swans':                  { abbr: 'SYD', bg: '#E2001A', text: '#FFFFFF' },
   'west coast':             { abbr: 'WCE', bg: '#062EB0', text: '#FFD200' },
@@ -994,7 +1002,36 @@ window.addEventListener('DOMContentLoaded', () => {
     else if (!v) { localStorage.removeItem('agm_key'); setStatus('', 'No key'); }
     else setStatus('error', 'Invalid');
   });
+  updateCalibrationNote();
+
+  // ─── Block pull-to-refresh from wiping app state ─────────────
+  let touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    const touchY = e.touches[0].clientY;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    // If at the very top of the page and pulling down, block the native refresh gesture
+    if (scrollTop <= 0 && touchY > touchStartY) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 });
+
+function updateCalibrationNote() {
+  const note = document.getElementById('calibrationNote');
+  if (!note) return;
+  const summary = typeof buildPerformanceSummary === 'function' ? buildPerformanceSummary() : null;
+  if (summary) {
+    const graded = summary.split('\\n').pop();
+    note.style.display = 'block';
+    note.innerHTML = `📊 <strong>Learning active</strong> — calibrating from your track record: ${graded}`;
+  } else {
+    note.style.display = 'block';
+    note.innerHTML = `📊 Mark 5+ leg results in History to activate performance calibration`;
+  }
+}
 
 function setStatus(type, text) {
   document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
@@ -1045,6 +1082,66 @@ zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
 zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
 
 // ─── ANALYSIS ────────────────────────────────────────────────
+// ─── PERFORMANCE CALIBRATION FROM HISTORY ─────────────────────
+function getPerformanceStats() {
+  const history = getHistory();
+  const stats = {
+    disposalOver: { won: 0, lost: 0 },
+    disposalUnder: { won: 0, lost: 0 },
+    goal2plus: { won: 0, lost: 0 },
+    goal3plus: { won: 0, lost: 0 },
+    goal1plus: { won: 0, lost: 0 },
+    overall: { won: 0, lost: 0 }
+  };
+
+  history.forEach(g => {
+    (g.legs || []).forEach(leg => {
+      if (leg.result !== 'won' && leg.result !== 'lost') return;
+      const market = (leg.market || '').toUpperCase();
+      let bucket = null;
+      if (market.includes('OVER') && market.includes('DISPOSAL')) bucket = 'disposalOver';
+      else if (market.includes('UNDER') && market.includes('DISPOSAL')) bucket = 'disposalUnder';
+      else if (market.includes('3+') && market.includes('GOAL')) bucket = 'goal3plus';
+      else if (market.includes('2+') && market.includes('GOAL')) bucket = 'goal2plus';
+      else if (market.includes('1+') && market.includes('GOAL')) bucket = 'goal1plus';
+
+      if (bucket) stats[bucket][leg.result === 'won' ? 'won' : 'lost']++;
+      stats.overall[leg.result === 'won' ? 'won' : 'lost']++;
+    });
+  });
+
+  return stats;
+}
+
+function buildPerformanceSummary() {
+  const s = getPerformanceStats();
+  const pct = (b) => {
+    const total = s[b].won + s[b].lost;
+    return total > 0 ? Math.round((s[b].won / total) * 100) : null;
+  };
+  const totalGraded = s.overall.won + s.overall.lost;
+
+  if (totalGraded < 5) return null; // not enough data yet to calibrate meaningfully
+
+  const lines = [];
+  const dOverPct = pct('disposalOver');
+  const dUnderPct = pct('disposalUnder');
+  const g1Pct = pct('goal1plus');
+  const g2Pct = pct('goal2plus');
+  const g3Pct = pct('goal3plus');
+
+  if (dOverPct !== null) lines.push(`Disposal OVER legs: ${s.disposalOver.won}W-${s.disposalOver.lost}L (${dOverPct}% hit rate)`);
+  if (dUnderPct !== null) lines.push(`Disposal UNDER legs: ${s.disposalUnder.won}W-${s.disposalUnder.lost}L (${dUnderPct}% hit rate)`);
+  if (g1Pct !== null) lines.push(`Goal 1+ legs: ${s.goal1plus.won}W-${s.goal1plus.lost}L (${g1Pct}% hit rate)`);
+  if (g2Pct !== null) lines.push(`Goal 2+ legs: ${s.goal2plus.won}W-${s.goal2plus.lost}L (${g2Pct}% hit rate)`);
+  if (g3Pct !== null) lines.push(`Goal 3+ legs: ${s.goal3plus.won}W-${s.goal3plus.lost}L (${g3Pct}% hit rate)`);
+
+  const overallPct = Math.round((s.overall.won / totalGraded) * 100);
+  lines.push(`Overall across all graded legs: ${s.overall.won}W-${s.overall.lost}L (${overallPct}% hit rate) from ${totalGraded} graded legs across ${getHistory().length} games`);
+
+  return lines.join('\\n');
+}
+
 async function runAnalysis() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { showError('No API key', 'Enter your Claude API key in the Setup card above.'); return; }
@@ -1071,7 +1168,16 @@ async function runAnalysis() {
   showLoading();
   animateSteps();
 
+  const performanceSummary = buildPerformanceSummary();
+
   const systemPrompt = `You are an expert AFL analyst and sports betting analyst. Analyse the Sportsbet screenshots and return a JSON object.
+${performanceSummary ? `
+
+YOUR TRACK RECORD SO FAR (use this to calibrate confidence levels):
+${performanceSummary}
+
+CALIBRATION INSTRUCTION: If a leg type above has a hit rate below 50%, be MORE conservative with that leg type in this analysis — either lower its confidence tier or require stronger evidence (5 of 5 games, not 3 of 5) before including it. If a leg type has a hit rate above 65%, that leg type has proven reliable — continue prioritising it. This is real historical performance data, use it to genuinely improve leg selection quality, not just as a note.
+` : ''}
 
 RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Read team names from the top of each screenshot
@@ -1098,12 +1204,14 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
 - LEG TYPE PRIORITY — DISPOSALS FIRST: The user's core strategy is disposal overs/unders with goal scorer legs as a smaller top-up. Build legs in this exact ratio: roughly 70-80% of legs should be disposal market legs (overs and unders), and only 20-30% should be goal scorer legs. Disposal legs have more genuine statistical value and lower correlation risk between legs.
+- NO CONTRADICTORY DUPLICATE MARKETS: Never include both the Over AND the Under of the SAME disposal market for the same player (e.g. never both "Josh Daicos OVER 24.5" and "Josh Daicos UNDER 24.5" — pick only ONE side). However, a player CAN legitimately appear more than once if the legs are for DIFFERENT markets — e.g. "Josh Daicos OVER 24.5 Disposals" AND "Josh Daicos 1+ Goals" can both be included if each individually qualifies under the selection rules below. Only block true contradictions (same market, opposite side), not different markets on the same player.
+- MANDATORY FORM-BASED REASONING: For every disposal leg, the "reasoning" field MUST explicitly state the actual last-5-games numbers you found in the TYPE 2 form screenshot and how many of those 5 games cleared the line, e.g. "Last 5: 22, 28, 31, 19, 26 — hit the 24.5 line in 3 of 5 games, season avg 25.2". If you cannot find TYPE 2 form data for a specific player, the reasoning MUST say "No form data available — based on market signal only" and confidence_tier MUST be LOW. NEVER pick a side purely because it has the shorter odds without citing actual game-by-game numbers as the primary justification.
 - CONSISTENCY RULE — DETERMINISTIC SELECTION ORDER: Follow this exact priority every time:
   (1) FIRST select ALL disposal legs where the player hit the line in 4 or 5 of their last 5 games — automatic inclusions, these are the foundation of the build
   (2) THEN select disposal legs where the player hit the line in 3 of 5 games AND season average exceeds the line
-  (3) If more legs are still needed to reach the minimum leg count, select additional disposal legs with the strongest market signal (biggest gap between over/under odds)
+  (3) If more legs are still needed to reach the minimum leg count, select additional disposal legs with the strongest market signal (biggest gap between over/under odds) — but only among players who still have SOME form data available
   (4) ONLY THEN add goal scorer legs — maximum 2-3 goal legs regardless of how many total legs are requested, starting with highest season average and best last-5 consistency
-  (5) If the requested max legs cannot be filled with quality disposal legs, it is better to include fewer high-quality disposal legs than to pad with more goal scorer legs
+  (5) If the requested max legs cannot be filled with quality disposal legs, it is better to include fewer high-quality disposal legs than to pad with more goal scorer legs or players lacking form data
   This ensures identical results every run and keeps the build disposal-heavy as per the user's actual strategy.
 - ODDS: Calculate raw_odds by multiplying all leg odds together. Set estimated_odds equal to raw_odds. Do not apply any discount — the user will check the real Sportsbet payout themselves.
 
@@ -1410,6 +1518,7 @@ function showHistory() {
 function hideHistory() {
   document.getElementById('historySection').style.display = 'none';
   document.getElementById('setupSection').style.display = 'block';
+  updateCalibrationNote();
   window.scrollTo(0, 0);
 }
 
@@ -1528,8 +1637,8 @@ function renderHistory() {
   });
 
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <button onclick="hideHistory()" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:4px;">←</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;position:sticky;top:0;background:var(--black);padding:10px 0;z-index:50;">
+      <button onclick="hideHistory()" style="background:var(--surface);border:1px solid var(--border-light);color:var(--gold);font-size:16px;cursor:pointer;padding:8px 14px;border-radius:10px;display:flex;align-items:center;gap:6px;font-weight:600;">← Home</button>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text);">Game History</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
@@ -1545,7 +1654,9 @@ function renderHistory() {
       <div class="acc-track"><div class="acc-fill" style="width:${hitPct || 0}%"></div></div>
     </div>
     <div class="section-label">${history.length} Saved Game${history.length !== 1 ? 's' : ''}</div>
-    ${gamesHTML}`;
+    ${gamesHTML}
+    <button onclick="hideHistory()" class="btn-new" style="margin-top:8px;">← Back to Home</button>
+    <div style="height:20px;"></div>`;
 }
 
 // ─── LEG RESULTS ─────────────────────────────────────────────
@@ -1611,6 +1722,7 @@ function editAnalysis() {
   document.getElementById('errorSection').style.display = 'none';
   // Re-render previews so user can add/remove screenshots
   renderPreviews();
+  updateCalibrationNote();
   window.scrollTo(0, 0);
 }
 
