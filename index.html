@@ -1029,7 +1029,7 @@ function updateCalibrationNote() {
     note.innerHTML = `📊 <strong>Learning active</strong> — calibrating from your track record: ${graded}`;
   } else {
     note.style.display = 'block';
-    note.innerHTML = `📊 Mark 5+ leg results in History to activate performance calibration`;
+    note.innerHTML = `📊 Mark 25+ leg results in History to activate performance calibration (needs a real sample size)`;
   }
 }
 
@@ -1121,7 +1121,7 @@ function buildPerformanceSummary() {
   };
   const totalGraded = s.overall.won + s.overall.lost;
 
-  if (totalGraded < 5) return null; // not enough data yet to calibrate meaningfully
+  if (totalGraded < 25) return null; // not enough data yet — 25+ graded legs minimum to avoid small-sample noise distorting picks
 
   const lines = [];
   const dOverPct = pct('disposalOver');
@@ -1176,7 +1176,7 @@ ${performanceSummary ? `
 YOUR TRACK RECORD SO FAR (use this to calibrate confidence levels):
 ${performanceSummary}
 
-CALIBRATION INSTRUCTION: If a leg type above has a hit rate below 50%, be MORE conservative with that leg type in this analysis — either lower its confidence tier or require stronger evidence (5 of 5 games, not 3 of 5) before including it. If a leg type has a hit rate above 65%, that leg type has proven reliable — continue prioritising it. This is real historical performance data, use it to genuinely improve leg selection quality, not just as a note.
+CALIBRATION INSTRUCTION: This data is only meaningful once sample sizes are reasonably large (25+ legs). Use it as a MINOR nudge only, never as a hard override. If a leg type has a hit rate below 40% across 15+ legs of that specific type, slightly favour requiring stronger form evidence for that leg type. Do NOT exclude an otherwise statistically strong leg (4-5 of last 5 games hit) just because its leg type has a lower historical hit rate — the individual leg quality from the actual screenshots always takes priority over this general calibration data. This is a light touch adjustment, not a filter.
 ` : ''}
 
 RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
