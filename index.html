@@ -1142,6 +1142,42 @@ function buildPerformanceSummary() {
   return lines.join('\\n');
 }
 
+// ─── HARD DEDUPLICATION — remove contradictory Over/Under pairs ──
+function removeContradictoryLegs(json) {
+  if (!json || !Array.isArray(json.legs)) return json;
+
+  const legs = json.legs;
+  const seen = new Map(); // key: player+line number -> index of leg to keep
+
+  legs.forEach((leg, idx) => {
+    const player = (leg.player || '').trim().toLowerCase();
+    const market = (leg.market || '').toUpperCase();
+    const isDisposal = market.includes('DISPOSAL');
+    if (!isDisposal || !player) return;
+
+    const lineMatch = market.match(/(\d+\.?\d*)/);
+    const line = lineMatch ? lineMatch[1] : '';
+    const key = player + '|' + line;
+
+    if (!seen.has(key)) {
+      seen.set(key, idx);
+    } else {
+      const existingIdx = seen.get(key);
+      const existingConf = legs[existingIdx].confidence || 0;
+      const newConf = leg.confidence || 0;
+      if (newConf > existingConf) {
+        legs[existingIdx]._remove = true;
+        seen.set(key, idx);
+      } else {
+        leg._remove = true;
+      }
+    }
+  });
+
+  json.legs = legs.filter(l => !l._remove);
+  return json;
+}
+
 async function runAnalysis() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { showError('No API key', 'Enter your Claude API key in the Setup card above.'); return; }
@@ -1269,6 +1305,7 @@ Factor in the venue's home ground advantage, ground dimensions, enclosed/open ai
       }
     }
     if(!json) throw new Error("Empty response. Please try again.");
+    json = removeContradictoryLegs(json);
     currentResults = json;
     showResults(json);
 
