@@ -1147,29 +1147,49 @@ function removeContradictoryLegs(json) {
   if (!json || !Array.isArray(json.legs)) return json;
 
   const legs = json.legs;
-  const seen = new Map(); // key: player+line number -> index of leg to keep
+  const seenDisposal = new Map(); // key: player+line number -> index of leg to keep
+  const seenGoal = new Map(); // key: player -> index of leg to keep (only ONE goal leg per player, any threshold)
 
   legs.forEach((leg, idx) => {
     const player = (leg.player || '').trim().toLowerCase();
     const market = (leg.market || '').toUpperCase();
+    if (!player) return;
+
     const isDisposal = market.includes('DISPOSAL');
-    if (!isDisposal || !player) return;
+    const isGoal = market.includes('GOAL');
 
-    const lineMatch = market.match(/(\d+\.?\d*)/);
-    const line = lineMatch ? lineMatch[1] : '';
-    const key = player + '|' + line;
+    if (isDisposal) {
+      const lineMatch = market.match(/(\d+\.?\d*)/);
+      const line = lineMatch ? lineMatch[1] : '';
+      const key = player + '|' + line;
 
-    if (!seen.has(key)) {
-      seen.set(key, idx);
-    } else {
-      const existingIdx = seen.get(key);
-      const existingConf = legs[existingIdx].confidence || 0;
-      const newConf = leg.confidence || 0;
-      if (newConf > existingConf) {
-        legs[existingIdx]._remove = true;
-        seen.set(key, idx);
+      if (!seenDisposal.has(key)) {
+        seenDisposal.set(key, idx);
       } else {
-        leg._remove = true;
+        const existingIdx = seenDisposal.get(key);
+        const existingConf = legs[existingIdx].confidence || 0;
+        const newConf = leg.confidence || 0;
+        if (newConf > existingConf) {
+          legs[existingIdx]._remove = true;
+          seenDisposal.set(key, idx);
+        } else {
+          leg._remove = true;
+        }
+      }
+    } else if (isGoal) {
+      // A player can only have ONE goal leg regardless of threshold (1+, 2+, 3+ are all correlated with each other)
+      if (!seenGoal.has(player)) {
+        seenGoal.set(player, idx);
+      } else {
+        const existingIdx = seenGoal.get(player);
+        const existingConf = legs[existingIdx].confidence || 0;
+        const newConf = leg.confidence || 0;
+        if (newConf > existingConf) {
+          legs[existingIdx]._remove = true;
+          seenGoal.set(player, idx);
+        } else {
+          leg._remove = true;
+        }
       }
     }
   });
@@ -1240,7 +1260,7 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Give each leg a confidence percentage (true probability)
 - If no value exists say NO BET
 - LEG TYPE PRIORITY — DISPOSALS FIRST: The user's core strategy is disposal overs/unders with goal scorer legs as a smaller top-up. Build legs in this exact ratio: roughly 70-80% of legs should be disposal market legs (overs and unders), and only 20-30% should be goal scorer legs. Disposal legs have more genuine statistical value and lower correlation risk between legs.
-- NO CONTRADICTORY DUPLICATE MARKETS: Never include both the Over AND the Under of the SAME disposal market for the same player (e.g. never both "Josh Daicos OVER 24.5" and "Josh Daicos UNDER 24.5" — pick only ONE side). However, a player CAN legitimately appear more than once if the legs are for DIFFERENT markets — e.g. "Josh Daicos OVER 24.5 Disposals" AND "Josh Daicos 1+ Goals" can both be included if each individually qualifies under the selection rules below. Only block true contradictions (same market, opposite side), not different markets on the same player.
+- NO CONTRADICTORY DUPLICATE MARKETS: Never include both the Over AND the Under of the SAME disposal market for the same player (e.g. never both "Josh Daicos OVER 24.5" and "Josh Daicos UNDER 24.5" — pick only ONE side). Never include more than ONE goal scorer leg for the same player, even at different thresholds (e.g. never both "Charlie Curnow 1+ Goals" and "Charlie Curnow 2+ Goals" — these are highly correlated since hitting 2+ automatically means 1+ also hit, so including both wastes a leg slot on redundant risk. Pick only the single strongest threshold for that player). However, a player CAN legitimately appear more than once if the legs are for genuinely DIFFERENT market categories — e.g. "Josh Daicos OVER 24.5 Disposals" AND "Josh Daicos 1+ Goals" can both be included since disposals and goals are separate outcomes. Only block true redundancy (same market/category, different threshold or side), not different market categories on the same player.
 - MANDATORY FORM-BASED REASONING: For every disposal leg, the "reasoning" field MUST explicitly state the actual last-5-games numbers you found in the TYPE 2 form screenshot and how many of those 5 games cleared the line, e.g. "Last 5: 22, 28, 31, 19, 26 — hit the 24.5 line in 3 of 5 games, season avg 25.2". If you cannot find TYPE 2 form data for a specific player, the reasoning MUST say "No form data available — based on market signal only" and confidence_tier MUST be LOW. NEVER pick a side purely because it has the shorter odds without citing actual game-by-game numbers as the primary justification.
 - CONSISTENCY RULE — DETERMINISTIC SELECTION ORDER: Follow this exact priority every time:
   (1) FIRST select ALL disposal legs where the player hit the line in 4 or 5 of their last 5 games — automatic inclusions, these are the foundation of the build
