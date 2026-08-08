@@ -1159,9 +1159,8 @@ function removeContradictoryLegs(json) {
     const isGoal = market.includes('GOAL');
 
     if (isDisposal) {
-      const lineMatch = market.match(/(\d+\.?\d*)/);
-      const line = lineMatch ? lineMatch[1] : '';
-      const key = player + '|' + line;
+      // Only ONE disposal leg per player total (whether O/U style or X+ ladder style — different thresholds/sides on the same underlying stat are correlated)
+      const key = player;
 
       if (!seenDisposal.has(key)) {
         seenDisposal.set(key, idx);
@@ -1243,7 +1242,7 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
 - Shorter-priced side = bookmaker signal — always note it
 - SCREENSHOT TYPES YOU WILL RECEIVE: The user uploads TWO different disposal-related screenshot types that must be CROSS-REFERENCED together:
   TYPE 1 — "Disposal Overs/Unders market": Shows a player name, a line (e.g. "24.5"), an Over odds price and an Under odds price (typically both close to $1.80-$1.95). This screenshot usually does NOT show any game-by-game form data, only the two prices.
-  TYPE 2 — "Disposal form/last-5 market": Shows the same or overlapping players with their last 5 games disposal counts listed individually (e.g. "27, 31, 28, 36, 39") plus season average. This screenshot has its own separate odds (usually much shorter, like $1.10-$1.30) for thresholds like 20+, 25+, 30+ disposals — IGNORE those specific odds, they are a different market. ONLY use this screenshot for the raw last-5 game numbers and season average.
+  TYPE 2 — "Disposal form/last-5 market": Shows the same or overlapping players with their last 5 games disposal counts listed individually (e.g. "27, 31, 28, 36, 39") plus season average. This screenshot ALSO has its own separate "X+ Disposals" ladder market with multiple thresholds (e.g. 18+, 20+, 22+, 25+), each with its own odds and a hit-rate percentage shown (e.g. "80%", "100%"). USE the raw last-5 game numbers and season average as the primary form data for TYPE 1 O/U decisions. ADDITIONALLY, when a TYPE 1 O/U call is genuinely ambiguous (see STEP 3 below), use this TYPE 2 ladder market's own odds and hit-rate percentages to find a safer high-confidence threshold leg instead.
   YOUR JOB: Match each player between the two screenshot types by name. Take the Over/Under ODDS from TYPE 1 and the ACTUAL FORM (last 5 games + season average) from TYPE 2. Combine them to make an informed decision.
   IMPORTANT — MULTIPLE SCREENSHOTS OF EACH TYPE: The user may upload several screenshots of TYPE 1 (multiple disposal O/U odds screens) and several of TYPE 2 (multiple disposal form screens) in a single batch, sometimes 10+ images total including goal markets and team news. You MUST scan EVERY single uploaded image individually and build a complete mental roster of every player and every data point found across ALL images before making any leg decisions. Do not stop scanning after the first few images. A player's odds might be on screenshot 3 while their form is on screenshot 7 — you must find and match both regardless of upload order or position in the batch.
 
@@ -1257,7 +1256,7 @@ RULES — FOLLOW THESE IN EXACT ORDER EVERY TIME, NO EXCEPTIONS:
     - 3 of last 5 games cleared the line AND season average is below the line → pick UNDER, confidence MEDIUM
     - 2 of last 5 games cleared the line AND season average is above the line → pick OVER, confidence MEDIUM
     - 2 of last 5 games cleared the line AND season average is below the line → pick UNDER, confidence MEDIUM
-    - Exactly 2-3 of 5 with season average sitting almost exactly on the line (genuinely ambiguous) → ONLY in this specific case, use the shorter-priced market side as the tiebreaker, and mark confidence_tier as MEDIUM not HIGH
+    - Exactly 2-3 of 5 with season average sitting almost exactly on the line (genuinely ambiguous for the O/U 21.5-style market) → DO NOT force a weak coin-flip O/U pick. Instead check TYPE 2 for its own separate "X+ Disposals" threshold ladder market (e.g. 18+, 20+, 22+, each with its own odds and hit-rate % shown, similar in format to the goal scorer 1+/2+/3+ ladder). Find the highest threshold in that ladder where the player cleared it in 4-5 of their last 5 games (80-100% hit rate) and use THAT as the leg instead — e.g. instead of an ambiguous "OVER/UNDER 21.5 Disposals" pick, use "18+ Disposals" from the TYPE 2 ladder market with its own odds, citing the specific hit-rate % shown for that threshold. This turns a genuine 50/50 into a HIGH confidence leg using safer real data instead of guessing on the coin-flip line.
   STEP 4 — The market odds are NEVER a reason to flip a decision that STEP 3 already made based on form. Do not use odds gap size ($0.08 or any other threshold) to override form. This rule from a previous version is DELETED and must not be applied.
   STEP 5 — If a player only appears in TYPE 1 (odds only, no form screenshot uploaded for them), do not guess — either exclude this player entirely from the build, or if included, set confidence_tier to LOW and state clearly in reasoning "No form data available for this player".
   STEP 6 — This decision must be identical every run for the same screenshots. Temperature is 0 — be fully deterministic and mechanical, following STEP 3's exact rule table every time with no creative interpretation.
