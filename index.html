@@ -853,6 +853,19 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-title">Analysis Mode</div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" id="modeStandardBtn" onclick="setAnalysisMode('standard')" style="flex:1;padding:12px 10px;border-radius:10px;border:1px solid var(--gold);background:rgba(240,180,41,0.12);color:var(--gold);font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+          Standard<br><span style="font-size:10px;font-weight:400;opacity:0.8;">1 run · fastest</span>
+        </button>
+        <button type="button" id="modeConsensusBtn" onclick="setAnalysisMode('consensus')" style="flex:1;padding:12px 10px;border-radius:10px;border:1px solid var(--border-light);background:var(--surface);color:var(--text-muted);font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+          High Confidence<br><span style="font-size:10px;font-weight:400;opacity:0.8;">3 runs · most reliable</span>
+        </button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.5;">High Confidence runs the analysis 3 times and only keeps legs that appear consistently across all runs — filters out borderline flip-flop calls. Uses ~3x the API credits per game.</p>
+    </div>
+
     <div class="section-label" style="margin-top:20px">Sportsbet Screenshots</div>
 
     <div class="upload-zone" id="uploadZone">
@@ -888,8 +901,9 @@
   <div id="loadingSection" style="display:none;">
     <div class="loading-card">
       <div class="spinner"></div>
-      <h3>Analysing your game</h3>
-      <p>Reading markets and building your AGM...</p>
+      <h3 id="loadingTitle">Analysing your game</h3>
+      <p id="loadingSubtitle">Reading markets and building your AGM...</p>
+      <div id="runProgress" style="display:none;font-size:12px;color:var(--gold);font-weight:700;margin-bottom:16px;margin-top:-10px;"></div>
       <div class="loading-steps">
         <div class="loading-step" id="step1"><div class="step-dot">1</div>Reading screenshot data</div>
         <div class="loading-step" id="step2"><div class="step-dot">2</div>Identifying teams & round</div>
@@ -915,6 +929,28 @@
 let uploadedImages = [];
 let historyExpandState = {}; // gameId -> true (expanded) / false (collapsed). Undefined = expanded by default.
 let currentResults = null;
+let analysisMode = 'standard'; // 'standard' or 'consensus'
+
+function setAnalysisMode(mode) {
+  analysisMode = mode;
+  const stdBtn = document.getElementById('modeStandardBtn');
+  const conBtn = document.getElementById('modeConsensusBtn');
+  if (mode === 'standard') {
+    stdBtn.style.border = '1px solid var(--gold)';
+    stdBtn.style.background = 'rgba(240,180,41,0.12)';
+    stdBtn.style.color = 'var(--gold)';
+    conBtn.style.border = '1px solid var(--border-light)';
+    conBtn.style.background = 'var(--surface)';
+    conBtn.style.color = 'var(--text-muted)';
+  } else {
+    conBtn.style.border = '1px solid var(--gold)';
+    conBtn.style.background = 'rgba(240,180,41,0.12)';
+    conBtn.style.color = 'var(--gold)';
+    stdBtn.style.border = '1px solid var(--border-light)';
+    stdBtn.style.background = 'var(--surface)';
+    stdBtn.style.color = 'var(--text-muted)';
+  }
+}
 
 // ─── TEAM LOGOS ──────────────────────────────────────────────
 const AFL_TEAMS = {
@@ -1197,6 +1233,75 @@ function removeContradictoryLegs(json) {
   return json;
 }
 
+async function callClaudeOnce(apiKey, systemPrompt, userMsg) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      temperature: 0,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const raw = data.content.map(b => b.text || "").join("");
+  let json = null;
+  try { json = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch(e1) {
+    try { const m = raw.match(/\{[\s\S]*\}/); if(m) json = JSON.parse(m[0]); } catch(e2) {
+      try { const s=raw.indexOf("{"),e=raw.lastIndexOf("}"); if(s!==-1&&e!==-1) json=JSON.parse(raw.slice(s,e+1)); } catch(e3) { throw new Error("Could not parse response. Please try again — too much text returned."); }
+    }
+  }
+  if(!json) throw new Error("Empty response. Please try again.");
+  return removeContradictoryLegs(json);
+}
+
+// ─── CONSENSUS MODE — run 3x, keep only legs that agree across runs ──
+function buildConsensusResult(runs) {
+  // runs = array of parsed JSON results (up to 3)
+  if (runs.length === 1) return runs[0];
+
+  // Build a map: "player|market" -> count of times it appeared, plus store the leg data
+  const legVotes = new Map();
+  runs.forEach(run => {
+    (run.legs || []).forEach(leg => {
+      const key = (leg.player || '').trim().toLowerCase() + '|' + (leg.market || '').trim().toLowerCase();
+      if (!legVotes.has(key)) legVotes.set(key, { count: 0, leg });
+      legVotes.get(key).count++;
+    });
+  });
+
+  // Keep only legs that appeared in at least 2 of the runs (majority agreement)
+  const majorityThreshold = Math.ceil(runs.length / 2);
+  const consensusLegs = [];
+  legVotes.forEach(({ count, leg }) => {
+    if (count >= majorityThreshold) {
+      leg._consensus_count = count;
+      leg._consensus_total = runs.length;
+      consensusLegs.push(leg);
+    }
+  });
+
+  // Use the last run as the base (most recent) for game-level fields, but replace legs with consensus set
+  const base = { ...runs[runs.length - 1] };
+  base.legs = consensusLegs;
+  base._consensus_mode = true;
+  base._consensus_runs = runs.length;
+  return removeContradictoryLegs(base);
+}
+
 async function runAnalysis() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { showError('No API key', 'Enter your Claude API key in the Setup card above.'); return; }
@@ -1300,40 +1405,18 @@ Factor in the venue's home ground advantage, ground dimensions, enclosed/open ai
   ];
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        temperature: 0,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMsg }]
-      })
-    });
+    const runCount = analysisMode === 'consensus' ? 3 : 1;
+    const runs = [];
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || `API error ${res.status}`);
+    for (let i = 0; i < runCount; i++) {
+      updateLoadingRunProgress(i + 1, runCount);
+      const result = await callClaudeOnce(apiKey, systemPrompt, userMsg);
+      runs.push(result);
     }
 
-    const data = await res.json();
-    const raw = data.content.map(b => b.text || "").join("");
-    let json = null;
-    try { json = JSON.parse(raw.replace(/```json|```/g, "").trim()); } catch(e1) {
-      try { const m = raw.match(/\{[\s\S]*\}/); if(m) json = JSON.parse(m[0]); } catch(e2) {
-        try { const s=raw.indexOf("{"),e=raw.lastIndexOf("}"); if(s!==-1&&e!==-1) json=JSON.parse(raw.slice(s,e+1)); } catch(e3) { throw new Error("Could not parse response. Please try again — too much text returned."); }
-      }
-    }
-    if(!json) throw new Error("Empty response. Please try again.");
-    json = removeContradictoryLegs(json);
-    currentResults = json;
-    showResults(json);
+    const finalResult = runCount > 1 ? buildConsensusResult(runs) : runs[0];
+    currentResults = finalResult;
+    showResults(finalResult);
 
   } catch (err) {
     console.error(err);
@@ -1364,11 +1447,31 @@ function showLoading() {
   document.getElementById('loadingSection').style.display = 'block';
   document.getElementById('resultsSection').style.display = 'none';
   document.getElementById('errorSection').style.display = 'none';
+  const runProgress = document.getElementById('runProgress');
+  if (analysisMode === 'consensus') {
+    document.getElementById('loadingTitle').textContent = 'Running High Confidence analysis';
+    document.getElementById('loadingSubtitle').textContent = 'Cross-checking across 3 independent runs...';
+    runProgress.style.display = 'block';
+    runProgress.textContent = 'Run 1 of 3';
+  } else {
+    document.getElementById('loadingTitle').textContent = 'Analysing your game';
+    document.getElementById('loadingSubtitle').textContent = 'Reading markets and building your AGM...';
+    runProgress.style.display = 'none';
+  }
   ['step1','step2','step3','step4','step5'].forEach((id, idx) => {
     const el = document.getElementById(id);
     el.className = 'loading-step';
     el.querySelector('.step-dot').textContent = idx + 1;
   });
+}
+
+function updateLoadingRunProgress(current, total) {
+  const runProgress = document.getElementById('runProgress');
+  if (!runProgress) return;
+  if (total > 1) {
+    runProgress.style.display = 'block';
+    runProgress.textContent = `Run ${current} of ${total}`;
+  }
 }
 
 // ─── RESULTS ─────────────────────────────────────────────────
@@ -1389,6 +1492,7 @@ function showResults(d) {
   (d.legs || []).forEach((leg, i) => {
     const tierCls = leg.confidence_tier === 'HIGH' ? 'conf-high' : leg.confidence_tier === 'LOW' ? 'conf-low' : 'conf-med';
     const legLogo = logoImg(leg.team, 'leg-logo');
+    const consensusBadge = leg._consensus_count ? `<div style="font-size:9px;color:var(--green);font-weight:700;margin-top:2px;">✓ ${leg._consensus_count}/${leg._consensus_total} runs agreed</div>` : '';
 
     legsHTML += `
       <div class="leg-card" id="lc${i}" data-state="pending">
@@ -1398,6 +1502,7 @@ function showResults(d) {
           <div class="leg-player">${leg.player}</div>
           <div class="leg-market">${leg.market} · <span style="color:var(--gold);font-weight:700;">${leg.odds}</span></div>
           <div class="leg-reason">${leg.reasoning}</div>
+          ${consensusBadge}
         </div>
         <div class="leg-right">
           <div class="leg-conf">${leg.confidence}%</div>
@@ -1419,6 +1524,7 @@ function showResults(d) {
     </div>
 
     <div class="results-header">
+      ${d._consensus_mode ? `<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--green);font-weight:700;text-align:center;">✓ HIGH CONFIDENCE MODE — legs verified across ${d._consensus_runs} independent runs</div>` : ''}
       ${d.round ? `<div class="round-badge">🏉 ${d.round}</div>` : '<div class="round-badge">🏉 AFL</div>'}
 
       <div class="matchup">
